@@ -3,7 +3,7 @@ title: "Module 4: AI-Powered Remediation"
 weight: 60
 ---
 
-In this module, you'll experience the future of infrastructure management: **AI agents that reason over observability data and propose infrastructure fixes**. You'll configure Amazon Q CLI with MCP (Model Context Protocol) servers for Honeycomb and Pulumi, then use Pulumi Neo to automatically generate infrastructure code changes based on the performance issues you discovered in Module 3.
+In this module, you'll experience the future of infrastructure management: **AI agents that reason over observability data and propose infrastructure fixes**. You'll configure Claude Code (or your preferred AI IDE/CLI) with MCP (Model Context Protocol) servers for Honeycomb and Pulumi, then use Pulumi Neo to automatically generate infrastructure code changes based on the performance issues you discovered in Module 3.
 
 ## Module Overview
 
@@ -11,9 +11,9 @@ In this module, you'll experience the future of infrastructure management: **AI 
 
 **Objectives:**
 - Understand MCP (Model Context Protocol) and its role in agentic workflows
-- Configure Honeycomb MCP server in Amazon Q
-- Configure Pulumi MCP server in Amazon Q
-- Use Amazon Q to query observability data from Honeycomb
+- Configure Honeycomb MCP server in Claude Code
+- Configure Pulumi MCP server in Claude Code
+- Use Claude Code to query observability data from Honeycomb
 - Ask AI agent to diagnose the performance bottleneck
 - Use Pulumi Neo to generate infrastructure code fix
 - Review and apply the fix (human-in-the-loop)
@@ -29,167 +29,147 @@ In this module, you'll experience the future of infrastructure management: **AI 
 - Access contextual information in real-time
 
 **In this workshop:**
-- **Honeycomb MCP Server**: Lets Amazon Q query your observability data
-- **Pulumi MCP Server**: Lets Amazon Q inspect infrastructure and invoke Pulumi Neo
-- **Amazon Q CLI**: AI assistant that understands MCP protocol
+- **Honeycomb MCP Server**: Lets Claude Code query your observability data
+- **Pulumi MCP Server**: Lets Claude Code inspect infrastructure and invoke Pulumi Neo
+- **Claude Code**: AI assistant that understands MCP protocol (you can also use other AI IDEs like Cursor, Windsurf, or AI CLIs like Zed)
 
 ::alert[**Why This Matters**: With MCP, your AI assistant can go beyond simple chat responses. It can actively reason over live data and propose concrete actions. This is the foundation of **agentic workflows** where AI systems can autonomously (with human oversight) operate infrastructure.]{type="info"}
 
-## Step 1: Verify Amazon Q CLI Installation
+## Step 1: Verify Claude Code Installation
 
-Amazon Q CLI should be pre-installed in your VS Code Server environment.
+Claude Code should be pre-installed in your VS Code Server environment. If you prefer to use a different AI IDE or CLI (such as Cursor, Windsurf, or Zed), you can follow their respective MCP configuration guides.
 
-1. Verify installation:
+1. Verify Claude Code CLI is installed:
    ```bash
-   q --version
+   claude --version
    ```
 
-   Expected output: `Amazon Q CLI v0.x.x` or similar
+   Expected output: `Claude Code v1.x.x` or similar
 
-2. If not installed, install it:
+2. If not installed, install it by following the instructions at:
+   - **Claude Code**: https://claude.ai/download
+   - **Alternative**: Visit https://docs.anthropic.com/en/docs/agents-and-tools/mcp to see MCP-compatible tools
+
+3. Verify MCP support is enabled:
    ```bash
-   # Installation instructions will be provided by your workshop instructor
-   # or follow: https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line-installing.html
+   claude mcp list
    ```
 
-3. Initialize Amazon Q:
+   This will show any currently configured MCP servers. Initially, you may see:
+   ```
+   Checking MCP server health...
+
+   (No servers configured yet)
+   ```
+
+   Or if you have other MCP servers configured, they will be listed here.
+
+::alert[**AI Tool Choice**: This workshop uses Claude Code for examples, but the MCP protocol is standardized. You can use any MCP-compatible AI assistant (Cursor, Windsurf, Zed, etc.) with the same MCP servers.]{type="info"}
+
+## Step 2: Add Honeycomb MCP Server
+
+The Honeycomb MCP server allows Claude Code to query your observability data directly. We'll use OAuth authentication, which eliminates the need to manage API keys.
+
+1. Add the Honeycomb MCP server to Claude Code:
    ```bash
-   q configure
+   claude mcp add honeycomb --transport http https://mcp.honeycomb.io/mcp
    ```
 
-   This will:
-   - Authenticate with AWS (using your workshop IAM role)
-   - Set up default configuration
-   - Enable MCP server support
+   This command will:
+   - Add the Honeycomb MCP server to your Claude Code configuration
+   - Prepare OAuth authentication (authentication happens on first use)
 
-::alert[**Workshop Environment**: In AWS-hosted workshops, Amazon Q is pre-configured with proper IAM permissions. For self-paced learning, ensure your IAM role has AmazonQ access.]{type="warning"}
+2. Authenticate with Honeycomb (OAuth flow):
 
-## Step 2: Set Up Honeycomb MCP Server
+   When you first use the Honeycomb MCP server, Claude Code will prompt you to authenticate. The OAuth flow will:
+   - Open your browser to Honeycomb's authorization page
+   - Ask you to grant Claude Code access to your Honeycomb data
+   - Redirect back to Claude Code with authentication complete
 
-The Honeycomb MCP server allows Amazon Q to query your observability data directly.
+   **No API keys needed!** OAuth tokens are managed automatically and securely.
 
-1. Create MCP configuration directory:
+3. Verify the Honeycomb MCP server is configured:
    ```bash
-   mkdir -p ~/.config/amazonq/mcp
+   claude mcp list
    ```
 
-2. Create Honeycomb MCP server configuration:
+   Expected output:
+   ```
+   Checking MCP server health...
+
+   honeycomb: https://mcp.honeycomb.io/mcp (HTTP) - ✓ Connected
+   ```
+
+4. Test the connection by asking Claude Code:
+   ```
+   What Honeycomb datasets are available?
+   ```
+
+   Claude Code will:
+   - Trigger the OAuth flow (if not already authenticated)
+   - Query your available datasets
+   - Display the results
+
+::alert[**OAuth Benefits**: OAuth authentication is more secure than API keys - tokens are short-lived, automatically refreshed, and can be easily revoked. You never need to copy/paste sensitive credentials!]{type="success"}
+
+::alert[**Documentation**: For detailed Honeycomb MCP configuration options, see: https://docs.honeycomb.io/integrations/mcp/configuration-guide/#setting-up-oauth]{type="info"}
+
+## Step 3: Add Pulumi MCP Server
+
+The Pulumi MCP server allows Claude Code to inspect infrastructure state and invoke Pulumi Neo for code generation.
+
+1. Get your Pulumi organization name:
    ```bash
-   cat > ~/.config/amazonq/mcp/honeycomb.json << 'EOF'
-   {
-     "mcpServers": {
-       "honeycomb": {
-         "command": "npx",
-         "args": [
-           "-y",
-           "@honeycombio/mcp-server-honeycomb"
-         ],
-         "env": {
-           "HONEYCOMB_API_KEY": "YOUR_HONEYCOMB_API_KEY",
-           "HONEYCOMB_ENVIRONMENT": "production"
-         }
-       }
-     }
-   }
-   EOF
+   pulumi whoami
    ```
 
-3. Update with your actual Honeycomb API key:
+   Note the organization name displayed.
+
+2. Add the Pulumi MCP server to Claude Code:
    ```bash
-   # Get API key from Pulumi ESC
-   HONEYCOMB_KEY=$(pulumi env open honeycomb-pulumi-workshop-dev --json | jq -r '.honeycomb.apiKey')
-
-   # Update configuration
-   sed -i "s/YOUR_HONEYCOMB_API_KEY/${HONEYCOMB_KEY}/" ~/.config/amazonq/mcp/honeycomb.json
+   claude mcp add pulumi --transport http https://mcp.ai.pulumi.com/mcp
    ```
 
-4. Test the Honeycomb MCP server:
+   You'll be prompted to authenticate with Pulumi. The MCP server will use your existing Pulumi access token from your login session.
+
+3. Configure the default organization (optional):
+
+   The Pulumi MCP server will automatically detect your organization from your Pulumi login. If you need to specify a different organization, you can set the `PULUMI_ORG` environment variable when adding the server.
+
+4. Verify both MCP servers are configured:
    ```bash
-   q "List available MCP servers"
+   claude mcp list
    ```
 
-   Expected response:
+   Expected output:
    ```
-   Available MCP servers:
-   - honeycomb: Query observability data from Honeycomb
-   ```
+   Checking MCP server health...
 
-::alert[**Security Note**: MCP server configurations are stored locally and contain API keys. Ensure proper file permissions (`chmod 600 ~/.config/amazonq/mcp/*.json`) and never commit these files to version control.]{type="warning"}
-
-## Step 3: Set Up Pulumi MCP Server
-
-The Pulumi MCP server allows Amazon Q to inspect infrastructure state and invoke Pulumi Neo for code generation.
-
-1. Install Pulumi MCP server globally:
-   ```bash
-   npm install -g @pulumi/mcp-server-pulumi
+   honeycomb: https://mcp.honeycomb.io/mcp (HTTP) - ✓ Connected
+   pulumi: https://mcp.ai.pulumi.com/mcp (HTTP) - ✓ Connected
    ```
 
-2. Create Pulumi MCP server configuration:
-   ```bash
-   cat > ~/.config/amazonq/mcp/pulumi.json << 'EOF'
-   {
-     "mcpServers": {
-       "pulumi": {
-         "command": "pulumi-mcp-server",
-         "args": [],
-         "env": {
-           "PULUMI_ACCESS_TOKEN": "YOUR_PULUMI_ACCESS_TOKEN",
-           "PULUMI_STACK": "dev",
-           "PULUMI_PROJECT_PATH": "/workshop/ai-workshop/pulumi"
-         }
-       }
-     }
-   }
-   EOF
+5. Test by asking Claude Code:
+   ```
+   What Pulumi stacks do I have in my organization?
    ```
 
-3. Update with your Pulumi access token:
-   ```bash
-   # Get current Pulumi token (from your login session)
-   PULUMI_TOKEN=$(pulumi whoami --json | jq -r '.token' 2>/dev/null || echo "MANUAL_SETUP_NEEDED")
+   Claude Code will use the Pulumi MCP server to query your stacks.
 
-   if [ "$PULUMI_TOKEN" != "MANUAL_SETUP_NEEDED" ]; then
-     sed -i "s/YOUR_PULUMI_ACCESS_TOKEN/${PULUMI_TOKEN}/" ~/.config/amazonq/mcp/pulumi.json
-   else
-     echo "Please manually update ~/.config/amazonq/mcp/pulumi.json with your Pulumi token"
-   fi
+::alert[**Documentation**: For detailed Pulumi MCP configuration and capabilities, see: https://www.pulumi.com/docs/iac/using-pulumi/mcp-server/]{type="info"}
+
+::alert[**MCP Architecture**: Each MCP server runs as a hosted service that Claude Code communicates with via HTTP. This keeps AI assistant logic separate from data source specifics, enabling extensibility without local installation.]{type="success"}
+
+## Step 4: Query Honeycomb Data via Claude Code
+
+Now let's use Claude Code to query the observability data we collected in Module 3.
+
+1. Ask Claude Code about recent application performance:
+   ```
+   Using the Honeycomb MCP server, show me the P95 latency for chat requests in the last hour for the otel-ai-chatbot-backend dataset
    ```
 
-4. Verify both MCP servers are available:
-   ```bash
-   q "Show me all connected MCP servers and their capabilities"
-   ```
-
-   Expected response:
-   ```
-   Connected MCP servers:
-
-   1. honeycomb
-      - Query traces by time range
-      - Get trace details by trace ID
-      - Run Honeycomb queries (GROUP BY, WHERE, etc.)
-      - List datasets
-
-   2. pulumi
-      - Inspect stack state
-      - Query resource properties
-      - Invoke Pulumi Neo for code generation
-      - Preview infrastructure changes
-   ```
-
-::alert[**MCP Architecture**: Each MCP server runs as a separate process that Amazon Q communicates with via JSON-RPC. This keeps AI assistant logic separate from data source specifics, enabling extensibility.]{type="info"}
-
-## Step 4: Query Honeycomb Data via Amazon Q
-
-Now let's use Amazon Q to query the observability data we collected in Module 3.
-
-1. Ask Amazon Q about recent application performance:
-   ```bash
-   q "Using the Honeycomb MCP server, show me the P95 latency for chat requests in the last hour for the otel-ai-chatbot dataset"
-   ```
-
-   Amazon Q will:
+   Claude Code will:
    - Connect to Honeycomb MCP server
    - Construct appropriate Honeycomb query
    - Execute query and return results
@@ -197,120 +177,146 @@ Now let's use Amazon Q to query the observability data we collected in Module 3.
 
    Expected output:
    ```
-   Querying Honeycomb for P95 latency...
+   ┌───────┬──────────────────┬──────────────────┬──────────────────┐
+   │ COUNT │ P50(duration_ms) │ P95(duration_ms) │ P99(duration_ms) │
+   ├───────┼──────────────────┼──────────────────┼──────────────────┤
+   │     3 │         14156.74 │         16895.72 │         16895.72 │
+   └───────┴──────────────────┴──────────────────┴──────────────────┘
 
-   Results from otel-ai-chatbot dataset (last 1 hour):
+   Results from otel-ai-chatbot-backend dataset (last 1 hour):
+   - P50: 14.2 seconds
+   - P95: 16.9 seconds
+   - P99: 16.9 seconds
+   - Count: 3 requests
 
-   Span: chat.request
-   - P50: 320ms
-   - P95: 545ms
-   - P99: 750ms
-   - Count: 247 requests
-
-   Analysis: P95 latency of 545ms is concerning. User experience
-   degrades significantly at this latency level.
+   Analysis: P95 latency of 16.9 seconds is extremely concerning!
+   User experience is severely degraded at this latency level.
    ```
 
 2. Ask for more specific analysis:
-   ```bash
-   q "Using Honeycomb, break down the latency by span name. Which operation is the slowest?"
+   ```
+   Using Honeycomb, break down the latency by span name. Which operation is the slowest?
    ```
 
    Expected output:
    ```
-   Latency breakdown by operation:
+   Latency breakdown by operation (P95):
 
-   1. genai.chat.completion - P95: 350ms (Bedrock API calls)
-   2. db.vector.search - P95: 180ms (OpenSearch queries)
-   3. HTTP POST /api/chat - P95: 315ms (Express handler)
+   1. POST - P95: 17,031ms (HTTP endpoint)
+   2. rag.generate_response - P95: 17,029ms (RAG generation)
+   3. rag.llm_generation - P95: 16,897ms (LLM calls)
+   4. chat anthropic.claude-3-5-sonnet - P95: 16,895ms (Claude API)
+   5. rag.vector_search - P95: 218ms (Vector database)
+   6. BedrockRuntime.InvokeModel - P95: 150ms (Bedrock SDK)
 
-   Analysis: Bedrock API calls are the primary bottleneck,
-   accounting for ~64% of total request time.
+   Analysis: The Claude API calls (via Bedrock) are taking nearly 17 seconds,
+   which accounts for ~99% of total request time. The vector search is fast
+   (218ms), so the bottleneck is clearly the LLM generation phase.
    ```
 
 3. Check for errors:
-   ```bash
-   q "Query Honeycomb for any errors in the last hour. Group by error message."
+   ```
+   Query Honeycomb for any errors in the last hour.
    ```
 
    Expected output:
    ```
-   Errors found in last hour:
+   ┌───────┐
+   │ COUNT │
+   ├───────┤
+   │     0 │
+   └───────┘
 
-   - db.vector.search: "Connection timeout" (3 occurrences)
-   - genai.chat.completion: "Rate limit exceeded" (1 occurrence)
+   No errors found in the last hour.
 
-   Total error rate: 1.6% (4 errors out of 247 requests)
+   Analysis: The application is running without errors, which is good.
+   The performance issue is not caused by errors or exceptions, but rather
+   by slow LLM response times.
    ```
 
-::alert[**Natural Language Queries**: Notice you don't need to learn Honeycomb's query syntax. Amazon Q translates your natural language request into proper Honeycomb queries using the MCP server.]{type="success"}
+::alert[**Natural Language Queries**: Notice you don't need to learn Honeycomb's query syntax. Claude Code translates your natural language request into proper Honeycomb queries using the MCP server.]{type="success"}
 
-## Step 5: Ask Amazon Q to Diagnose the Issue
+## Step 5: Ask Claude Code to Diagnose the Issue
 
-Now let's have Amazon Q analyze the infrastructure and propose a solution.
+Now let's have Claude Code analyze the infrastructure and propose a solution.
 
 1. Provide context and ask for diagnosis:
-   ```bash
-   q "I'm seeing P95 latency of 545ms for my otel-ai-chatbot application. \
-   The Bedrock API calls take 350ms P95 and OpenSearch queries take 180ms P95. \
-   Using the Pulumi MCP server, inspect the current ECS task configuration \
-   and tell me if resource constraints could be contributing to the latency."
+   ```
+   I'm seeing P95 latency of 16.9 seconds for my otel-ai-chatbot application.
+   The Claude API calls (via Bedrock) take 16,895ms P95 and vector search takes 218ms P95.
+   Using the Pulumi MCP server, inspect the current infrastructure configuration
+   and tell me what could be causing such high LLM latency.
    ```
 
-   Amazon Q will:
+   Claude Code will:
    - Connect to Pulumi MCP server
    - Inspect the current stack state
-   - Examine ECS task definition (CPU, memory)
-   - Analyze CloudWatch metrics (if available)
+   - Examine ECS task definition and Bedrock configuration
+   - Analyze the application code for LLM configuration
    - Correlate with observed latency patterns
 
    Expected response:
    ```
-   Analyzing infrastructure...
+   Analyzing infrastructure and application configuration...
 
-   Current ECS Task Configuration:
-   - CPU: 512 units (0.5 vCPU)
-   - Memory: 1024 MB (1 GB)
-   - Task count: 1
-
-   CloudWatch Metrics (last hour):
-   - CPU Utilization: Average 68%, Max 89%
-   - Memory Utilization: Average 76%, Max 82%
+   Current Configuration:
+   - Model: anthropic.claude-3-5-sonnet-20240620-v1:0
+   - ECS Task: CPU 256 units, Memory 512 MB
+   - No response streaming enabled
+   - No caching layer for similar queries
 
    Diagnosis:
-   Your ECS task is CPU-constrained. With only 0.5 vCPU, the task
-   frequently hits 85-90% CPU utilization under load. This causes:
+   The 16.9 second P95 latency is caused by the LLM generation phase.
+   The Claude Sonnet 3.5 model is taking nearly 17 seconds to generate
+   responses. This is unusually high and suggests:
 
-   1. CPU contention for all operations
-   2. Increased context switching overhead
-   3. Degraded performance for CPU-bound tasks (JSON parsing, etc.)
-   4. Slower network I/O due to CPU starvation
+   1. Large context windows being sent to the model
+   2. Very long response generation (high max_tokens setting)
+   3. No streaming enabled - users wait for complete response
+   4. Potential RAG context including too many documents
+   5. No response caching for similar questions
 
-   The Bedrock API calls themselves may be fine, but the CPU constraint
-   adds overhead to request processing, making everything slower.
+   The infrastructure (ECS task) is NOT the bottleneck here. The task
+   is spending 99% of its time waiting for Bedrock API responses.
 
-   Recommendation: Increase ECS task CPU to 1024 units (1 vCPU).
+   Recommendations (in order of impact):
+
+   1. Enable streaming responses (immediate UX improvement)
+      - Users see partial results while generation continues
+      - Perceived latency drops significantly
+
+   2. Optimize RAG context size
+      - Limit number of retrieved documents
+      - Reduce chunk sizes passed to LLM
+
+   3. Implement response caching
+      - Cache responses for similar/repeated questions
+      - Reduce API calls for common queries
+
+   4. Consider model alternatives
+      - Claude Haiku: Faster, cheaper, slightly less capable
+      - Or use Claude Sonnet with streaming
 
    Expected Impact:
-   - P95 latency reduction: 545ms → ~380ms (-30%)
-   - CPU utilization: 89% → ~55%
-   - Better headroom for traffic spikes
+   - With streaming: Perceived latency 16.9s → ~2s (time to first token)
+   - With optimized context: Total latency 16.9s → ~8-10s (-40-50%)
+   - With caching: 80% of requests served instantly from cache
    ```
 
-::alert[**This is the key insight**: The AI agent correlated observability data (traces) with infrastructure configuration (ECS task size) to diagnose that the performance issue is infrastructure-related, not application-related.]{type="success"}
+::alert[**This is the key insight**: The AI agent correlated observability data (traces) with application configuration to diagnose that the performance issue is caused by LLM generation latency, not infrastructure resource constraints. The solution requires application-level changes, not infrastructure scaling.]{type="success"}
 
 ## Step 6: Invoke Pulumi Neo for Code Generation
 
 Now let's use **Pulumi Neo**, Pulumi's AI agent, to generate the infrastructure code change.
 
-1. Ask Amazon Q to generate the fix using Pulumi Neo:
-   ```bash
-   q "Using the Pulumi MCP server, invoke Pulumi Neo to generate a patch \
-   that increases the ECS task CPU from 512 to 1024 units. \
-   Show me the diff before I apply it."
+1. Ask Claude Code to generate the fix using Pulumi Neo:
+   ```
+   Using the Pulumi MCP server, invoke Pulumi Neo to generate a patch
+   that increases the ECS task CPU from 512 to 1024 units.
+   Show me the diff before I apply it.
    ```
 
-   Amazon Q will:
+   Claude Code will:
    - Connect to Pulumi MCP server
    - Invoke Pulumi Neo with the task: "increase ECS task CPU to 1024"
    - Neo analyzes the current infrastructure code
@@ -362,10 +368,14 @@ After reviewing the patch, apply it:
 1. Apply the patch to your infrastructure code:
    ```bash
    cd /workshop/ai-workshop/pulumi
-   q "Apply the Pulumi Neo patch to increase ECS task CPU"
    ```
 
-   Amazon Q will:
+   Then ask Claude Code:
+   ```
+   Apply the Pulumi Neo patch to increase ECS task CPU
+   ```
+
+   Claude Code will:
    - Write the patch to `pulumi/index.ts`
    - Create a backup of the original file
    - Confirm the change was applied
@@ -436,9 +446,9 @@ Now let's verify that the fix improved performance:
 2. Let it run for 3-5 minutes to collect new telemetry data.
 
 3. Query Honeycomb for updated latency:
-   ```bash
-   q "Using Honeycomb, compare P95 latency for chat requests before and after the deployment. \
-   Use the deployment time as the comparison point."
+   ```
+   Using Honeycomb, compare P95 latency for chat requests before and after the deployment.
+   Use the deployment time as the comparison point.
    ```
 
    Expected output:
@@ -518,14 +528,14 @@ Then create a PR on GitHub with:
 
 ## Step 10: Explore Further Optimizations
 
-Now ask Amazon Q for additional recommendations:
+Now ask Claude Code for additional recommendations:
 
-```bash
-q "Based on the observability data in Honeycomb and the current infrastructure in Pulumi, \
-what other optimizations could improve performance or reduce costs?"
+```
+Based on the observability data in Honeycomb and the current infrastructure in Pulumi,
+what other optimizations could improve performance or reduce costs?
 ```
 
-Amazon Q might suggest:
+Claude Code might suggest:
 - **Implement caching**: Cache OpenSearch results for common queries
 - **Optimize OpenSearch**: Increase shard count or instance size
 - **Add autoscaling**: Scale ECS tasks based on CPU utilization
@@ -533,14 +543,14 @@ Amazon Q might suggest:
 - **Add CDN**: Cache static frontend assets on CloudFront
 - **Optimize embeddings**: Reduce vector dimensions (1536 → 768)
 
-You can then ask Amazon Q to help implement any of these optimizations using the same workflow!
+You can then ask Claude Code to help implement any of these optimizations using the same workflow!
 
 ## Module Summary
 
 Congratulations! You've successfully:
 
 ✅ Configured MCP servers for Honeycomb and Pulumi
-✅ Connected Amazon Q CLI to your observability and infrastructure data
+✅ Connected Claude Code to your observability and infrastructure data
 ✅ Used natural language to query Honeycomb traces
 ✅ Asked AI agent to diagnose performance bottleneck
 ✅ Invoked Pulumi Neo to generate infrastructure code fix
@@ -601,34 +611,43 @@ We've only scratched the surface. Future capabilities might include:
 
 ### MCP Server Not Connecting
 
-**Symptom**: Amazon Q says "Honeycomb MCP server unavailable"
+**Symptom**: Claude Code says "Honeycomb MCP server unavailable" or cannot connect
 
 **Solution**:
-1. Check MCP configuration file exists:
+1. Check that the MCP server is configured:
    ```bash
-   cat ~/.config/amazonq/mcp/honeycomb.json
+   claude mcp list
    ```
 
-2. Verify API key is set correctly:
+2. Re-authenticate with Honeycomb (refresh OAuth):
+
+   If your OAuth token has expired or authentication failed, you may need to re-authenticate:
+   - Ask Claude Code to query Honeycomb data again
+   - Follow the OAuth flow when prompted
+   - Grant the necessary permissions
+
+3. Try removing and re-adding the MCP server:
    ```bash
-   jq .mcpServers.honeycomb.env.HONEYCOMB_API_KEY ~/.config/amazonq/mcp/honeycomb.json
+   claude mcp remove honeycomb
+   claude mcp add honeycomb --transport http https://mcp.honeycomb.io/mcp
    ```
 
-3. Test MCP server manually:
-   ```bash
-   npx -y @honeycombio/mcp-server-honeycomb
-   ```
+   Then re-authenticate using the OAuth flow when you make your first query.
 
 ### Pulumi Neo Not Available
 
-**Symptom**: Amazon Q says "Pulumi Neo is not enabled for this stack"
+**Symptom**: Claude Code says "Pulumi Neo is not enabled for this stack"
 
 **Solution**:
 1. Verify you're on Pulumi Cloud (not self-hosted Pulumi backend)
 2. Check your Pulumi organization has Neo enabled (may require paid plan)
 3. Contact Pulumi support to enable Neo access
+4. Verify the Pulumi MCP server is properly authenticated:
+   ```bash
+   pulumi whoami
+   ```
 
-### Amazon Q Returns Incorrect Analysis
+### Claude Code Returns Incorrect Analysis
 
 **Symptom**: AI agent makes wrong conclusions from data
 
@@ -643,8 +662,9 @@ We've only scratched the surface. Future capabilities might include:
 ## Additional Resources
 
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/)
-- [Honeycomb MCP Server Documentation](https://github.com/honeycombio/mcp-server-honeycomb)
-- [Pulumi MCP Server Documentation](https://github.com/pulumi/mcp-server-pulumi)
+- [Honeycomb MCP Server Documentation](https://docs.honeycomb.io/integrations/mcp/configuration-guide/)
+- [Pulumi MCP Server Documentation](https://www.pulumi.com/docs/iac/using-pulumi/mcp-server/)
 - [Pulumi Neo Documentation](https://www.pulumi.com/docs/pulumi-cloud/copilot/neo/)
-- [Amazon Q Developer CLI Documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line.html)
+- [Claude Code Documentation](https://claude.ai/code)
+- [MCP Compatible AI Tools](https://docs.anthropic.com/en/docs/agents-and-tools/mcp)
 - [Building Agentic Workflows (Andrew Ng)](https://www.deeplearning.ai/the-batch/how-agents-can-improve-llm-performance/)
