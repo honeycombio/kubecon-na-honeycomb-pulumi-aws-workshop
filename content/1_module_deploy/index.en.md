@@ -189,7 +189,7 @@ Before creating the workshop environment, you need to configure AWS OIDC authent
 
 7. **Verify the setup**:
    ```bash
-   esc run pulumi-idp/auth -- aws sts get-caller-identity
+   pulumi env run pulumi-idp/auth -- aws sts get-caller-identity
    ```
 
    Expected output:
@@ -363,7 +363,7 @@ Before deploying, let's understand what Pulumi will create:
 1. Open the Pulumi infrastructure code:
    ```bash
    cd pulumi
-   cat index.ts | head -50
+   cat index.ts
    ```
 
 2. **Review key components in `pulumi/index.ts`**:
@@ -605,7 +605,7 @@ Before deploying, let's understand what Pulumi will create:
 
 3. Initialize a new stack:
    ```bash
-   pulumi stack init dev
+   pulumi stack init ws
    ```
 
 4. Configure the stack to use your ESC environment:

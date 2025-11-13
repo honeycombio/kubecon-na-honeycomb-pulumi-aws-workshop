@@ -160,11 +160,48 @@ The Pulumi MCP server allows Claude Code to inspect infrastructure state and inv
 
 ::alert[**MCP Architecture**: Each MCP server runs as a hosted service that Claude Code communicates with via HTTP. This keeps AI assistant logic separate from data source specifics, enabling extensibility without local installation.]{type="success"}
 
-## Step 0: Prepare some Honeycomb Data
+## Step 4: Generate Fresh Observability Data
 
-Head over to the UI of our AI Chatbot application and interact with it a bit to generate some observability data in Honeycomb. I would say make around 5-10 requests to the chatbot by asking it various questions. This will ensure we have some data to query in the next steps.
+Before we can use Claude Code to query Honeycomb, we need to generate some recent telemetry data by using the AI Chatbot application.
 
-## Step 4: Query Honeycomb Data via Claude Code
+**Why generate fresh data?**
+- Claude Code will query data from the "last hour" in the next steps
+- Fresh data ensures we have meaningful metrics to analyze
+- Multiple requests will generate varied latency patterns for analysis
+
+**Instructions:**
+
+1. **Access the AI Chatbot application:**
+   - Get the Application Load Balancer URL from your Pulumi stack outputs:
+     ```bash
+     pulumi stack output albUrl
+     ```
+   - Open the URL in your web browser
+
+2. **Generate 5-10 chat requests** by asking varied questions about OpenTelemetry:
+
+   **Example questions to ask:**
+   - "How do I configure OpenTelemetry to export traces to Honeycomb?"
+   - "What are the steps to instrument a Node.js application with OpenTelemetry?"
+   - "How can I create custom spans in my Node.js application?"
+   - "What is the difference between manual and automatic instrumentation in OpenTelemetry?"
+   - "How can I instrument React web applications with OpenTelemetry?"
+   - "Tell me about Honeycomb and Pulumi"
+
+3. **What's happening behind the scenes:**
+   - Each chat request triggers multiple spans:
+     - HTTP request spans (GET, POST)
+     - Vector search operations (OpenSearch)
+     - LLM inference calls (AWS Bedrock)
+     - Embedding generation
+   - OpenTelemetry automatically exports these traces to Honeycomb
+   - Traces include latency, status codes, and custom attributes
+
+4. **Wait 1-2 minutes** for traces to propagate to Honeycomb before proceeding to the next step.
+
+::alert[**Pro Tip**: Vary your questions to generate different response patterns. This will give you more interesting data to analyze when querying with Claude Code in the next steps!]{type="info"}
+
+## Step 5: Query Honeycomb Data via Claude Code
 
 Now let's use Claude Code to query the observability data we collected in Module 3.
 
@@ -199,9 +236,9 @@ Now let's use Claude Code to query the observability data we collected in Module
     ⏺ honeycomb - run_query (MCP)(environment_slug: "otel-ai-chatbot-backend", dataset_slug: "otel-ai-chatbot-backend", query_spec:
     {"calculations":[{"op":"P95","column":"duration_ms"},{"op":"COUNT"}],"filters":[{"column":"http.status_code","op":"=",
     "value":200}],"time_range":3600}, output_format: "ascii")
-    ⎿ ┌───────┬──────────────────┐
-       │ COUNT │ P95(duration_ms) │
-       ├───────┼──────────────────┤
+    ┌───────┬──────────────────┐
+    │ COUNT │ P95(duration_ms) │
+    ├───────┼──────────────────┤
     … +43 lines (ctrl+o to expand)
     
     ⏺ P95 Latency Results for Successful Chat Requests
@@ -237,7 +274,7 @@ Now let's use Claude Code to query the observability data we collected in Module
     {"calculations":[{"op":"P95","column":"duration_ms"},{"op":"AVG","column":"duration_ms"},{"op":"COUNT"}],"filters":[{"
     column":"http.status_code","op":"=","value":200}],"breakdowns":["name"],"orders":[{"op":"P95","column":"duration_ms","
     order":"descending"}],"limit":20,"time_range":3600}, output_format: "ascii")
-    ⎿ ┌──────────────────┬───────┬──────────────────┬────────────────────────────────────────────────┐
+    ┌──────────────────┬───────┬──────────────────┬────────────────────────────────────────────────┐
     │ AVG(duration_ms) │ COUNT │ P95(duration_ms) │ name                                           │
     ├──────────────────┼───────┼──────────────────┼────────────────────────────────────────────────┤
     … +206 lines (ctrl+o to expand)
@@ -247,7 +284,7 @@ Now let's use Claude Code to query the observability data we collected in Module
     Here's the breakdown of latency for successful requests (HTTP 200), sorted by P95 latency:
     
     | Span Name                                      | P95 Latency           | Avg Latency         | Count |
-      |------------------------------------------------|-----------------------|---------------------|-------|
+    |------------------------------------------------|-----------------------|---------------------|-------|
     | chat anthropic.claude-3-5-sonnet-20240620-v1:0 | 19,621.77 ms (~19.6s) | 16,977.87 ms (~17s) | 7     |
     | POST                                           | 19,202.18 ms (~19.2s) | 8,583.47 ms (~8.6s) | 14    |
     | BedrockRuntime.InvokeModel                     | 186.00 ms             | 115.68 ms           | 7     |
@@ -295,7 +332,7 @@ Now let's use Claude Code to query the observability data we collected in Module
 
 ::alert[**Natural Language Queries**: Notice you don't need to learn Honeycomb's query syntax. Claude Code translates your natural language request into proper Honeycomb queries using the MCP server.]{type="success"}
 
-## Step 5: Use Pulumi Neo to Diagnose the Issue
+## Step 6: Use Pulumi Neo to Diagnose the Issue
 
 Now let's use **Pulumi Neo** (via Claude Code) to analyze the infrastructure and application based on our Honeycomb findings.
 
@@ -327,7 +364,7 @@ Now let's use **Pulumi Neo** (via Claude Code) to analyze the infrastructure and
     inference latency\n2. Improve overall application performance\n3. Optimize for better user experience given these
     latency patterns\n4. Consider infrastructure changes like compute resources, caching, or architectural improvements",
     stack: {"name":"ws","project":"otel-ai-chatbot-infra"})
-    ⎿ Neo task launched at: https://app.pulumi.com/ediri/neo/tasks/ccd742a6-0fd6-4d03-9751-359525af019c
+    ⎿ Neo task launched at: https://app.pulumi.com/<your-org>/neo/tasks/<task-id>
     ⎿ ⏳ Neo is still processing your request. This can take some time for complex infrastructure tasks.
     
          To check for updates, call this tool again with the same taskId (no need to provide a query).
@@ -410,8 +447,8 @@ Now let's use **Pulumi Neo** (via Claude Code) to analyze the infrastructure and
     📊 Expected Results
     
     | Scenario              | Current P95 | Expected P95 | Improvement |
-      |-----------------------|-------------|--------------|-------------|
-    | Cache hit             | 19.6s       | 0.5s         | 97% ✨       |
+    |-----------------------|-------------|--------------|-------------|
+    | Cache hit             | 19.6s       | 0.5s         | 97% ✨      |
     | Cache miss (Haiku)    | 19.6s       | 5s           | 75%         |
     | Streaming (perceived) | 19.6s       | 2s TTFB      | 90%         |
     
@@ -428,12 +465,12 @@ Now let's use **Pulumi Neo** (via Claude Code) to analyze the infrastructure and
        2. Create infrastructure patches for review?
        3. Implement specific optimizations?
     
-    View the full analysis: https://app.pulumi.com/ediri/neo/tasks/ccd742a6-0fd6-4d03-9751-359525af019c
+    View the full analysis: https://app.pulumi.com/<your-org>/neo/tasks/<task-id>
    ~~~
 
 ::alert[**Neo's Power**: Notice how Neo analyzed the entire stack - infrastructure state, application code structure, and correlated with Honeycomb metrics - to provide a comprehensive diagnosis. It correctly identified this as an application-level issue, not infrastructure.]{type="success"}
 
-## Step 6: Ask Pulumi Neo for Detailed Solution Recommendations
+## Step 7: Ask Pulumi Neo for Detailed Solution Recommendations
 
 Neo has diagnosed the root cause (application-level LLM latency). Now let's ask for detailed, prioritized recommendations.
 
@@ -459,7 +496,7 @@ Neo has diagnosed the root cause (application-level LLM latency). Now let's ask 
     optimization\n\n5. **Monitoring & Observability:**\n   - CloudWatch metrics for cache performance\n   - OpenTelemetry
     instrumentation for cache operations\n   - Honeycomb integration for cache analytics\n   - Key metrics to track (hit
     rate, latency, etc.)\n\nPlease provide concrete code examples and configuration that can be directly implemented.")
-    ⎿ Sent follow-up message to task https://app.pulumi.com/ediri/neo/tasks/ccd742a6-0fd6-4d03-9751-359525af019c
+    ⎿ Sent follow-up message to task https://app.pulumi.com/<your-org>/neo/tasks/<task-id>
     ⎿ ⏳ Neo is still processing your request. This can take some time for complex infrastructure tasks.
     
          To check for updates, call this tool again with the same taskId (no need to provide a query).
@@ -546,8 +583,8 @@ Neo has diagnosed the root cause (application-level LLM latency). Now let's ask 
     🎯 Expected Impact
     
     | Metric          | Before | After (Cache Hit) | After (Cache Miss) | Improvement   |
-      |-----------------|--------|-------------------|--------------------|---------------|
-    | P95 Latency     | 19.6s  | 50ms              | 5s                 | 97% / 75% ✨   |
+    |-----------------|--------|-------------------|--------------------|---------------|
+    | P95 Latency     | 19.6s  | 50ms              | 5s                 | 97% / 75% ✨  |
     | Bedrock Calls   | 100%   | 30%               | 100%               | 70% reduction |
     | User Experience | Poor   | Excellent         | Good               | Dramatic      |
     
@@ -581,7 +618,7 @@ Neo has diagnosed the root cause (application-level LLM latency). Now let's ask 
       - Bedrock API call reduction
       - End-to-end performance gains
     
-    View full task details: https://app.pulumi.com/ediri/neo/tasks/ccd742a6-0fd6-4d03-9751-359525af019c
+    View full task details: https://app.pulumi.com/<your-org>/neo/tasks/<task-id>
     
     All code is production-ready with comprehensive error handling, resilience patterns, and full observability integration. Would you like me to
     help you deploy this solution or explore any specific aspect in more detail?
@@ -597,7 +634,7 @@ Neo has diagnosed the root cause (application-level LLM latency). Now let's ask 
 
 ::alert[**The Agentic Workflow**: Notice the flow: Honeycomb data → Neo diagnosis (Step 5) → Neo recommendations (Step 6) → Neo code generation (Step 7). This is a complete AI-driven operations loop where the AI agent reasons across observability, infrastructure, and application code to solve problems autonomously with human oversight.]{type="success"}
 
-## Step 7: Request Code Generation and PR Creation
+## Step 8: Request Code Generation and PR Creation
 
 Let's ask Neo to implement the highest-impact solution: **Enable Streaming Responses**.
 
@@ -626,7 +663,7 @@ Let's ask Neo to implement the highest-impact solution: **Enable Streaming Respo
     instructions\n- Base branch: main (or the default branch)\n- Create a feature branch:
     feat/redis-caching-implementation\n\nPlease create all the necessary files, commit them to a new branch, and open the
     pull request.")
-    ⎿ Sent follow-up message to task https://app.pulumi.com/ediri/neo/tasks/ccd742a6-0fd6-4d03-9751-359525af019c
+    ⎿ Sent follow-up message to task https://app.pulumi.com/<your-org>/neo/tasks/<task-id>
     ⎿ Perfect! Now let me create a summary document of all the files created and the implementation:
     
          ## Summary
@@ -739,7 +776,7 @@ Let's ask Neo to implement the highest-impact solution: **Enable Streaming Respo
     🎯 Expected Impact
     
     | Metric            | Before | After (Cache Hit) | Improvement                       |
-      |-------------------|--------|-------------------|-----------------------------------|
+    |-------------------|--------|-------------------|-----------------------------------|
     | P95 Latency       | 19.6s  | 50ms              | 97% ✨                             |
     | Bedrock API Calls | 100%   | 30%               | 70% reduction                     |
     | Monthly Cost      | ~$150  | ~$187             | +$37 for massive performance gain |
@@ -756,7 +793,7 @@ Let's ask Neo to implement the highest-impact solution: **Enable Streaming Respo
 
 ::alert[**The Complete Agentic Loop**: Neo just demonstrated end-to-end automation - from observability data to PR creation. It analyzed Honeycomb metrics (Step 4), diagnosed the issue (Step 5), provided recommendations (Step 6), generated code patches, and created a production-ready PR (Step 7). This is AI-powered infrastructure management in action with human-in-the-loop oversight.]{type="success"}
 
-## Step 8: Review the Pull Request
+## Step 9: Review the Pull Request
 
 1. Visit the Pull Request URL provided by Neo:
    ```
@@ -792,7 +829,7 @@ Let's ask Neo to implement the highest-impact solution: **Enable Streaming Respo
 
 ::alert[**Human-in-the-Loop**: Notice how Neo created a complete PR with all files, documentation, and clear explanations - but it's waiting for YOUR approval. You maintain full control over what gets deployed to production.]{type="success"}
 
-## Step 9: Understanding the Complete Impact
+## Step 10: Understanding the Complete Impact
 
 Let's understand what the implemented caching solution will deliver:
 
