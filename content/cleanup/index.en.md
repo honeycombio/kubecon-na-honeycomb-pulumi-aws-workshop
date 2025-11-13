@@ -31,7 +31,7 @@ The application infrastructure you deployed via Pulumi can be destroyed in a sin
 
 ```bash
 cd /workshop/ai-workshop/pulumi
-pulumi env run honeycomb-pulumi-workshop-dev -i -- pulumi destroy --yes
+pulumi destroy --yes
 ```
 
 This will delete:
@@ -57,11 +57,11 @@ After destruction completes, verify the stack is gone:
 pulumi stack ls
 ```
 
-You should see your `dev` stack with no resources:
+You should see your `ws` stack with no resources:
 
 ```
 NAME                                                    LAST UPDATE     RESOURCE COUNT  URL
-dev                                                     3 minutes ago   0               https://app.pulumi.com/...
+ws                                                     3 minutes ago   0               https://app.pulumi.com/...
 ```
 
 ### Step 3: Remove Pulumi Stack (Optional)
@@ -69,63 +69,12 @@ dev                                                     3 minutes ago   0       
 If you want to completely remove the stack from Pulumi Cloud:
 
 ```bash
-pulumi stack rm dev --yes
+pulumi stack rm ws --yes
 ```
 
 ::alert[**Warning**: This deletes the stack history and state. Only do this if you're sure you won't need to reference this stack again.]{type="warning"}
 
-### Step 4: Clean Up CloudFormation Stacks
-
-If you're running the workshop on your own account (not AWS-hosted event), you also need to delete the pre-deployed CloudFormation stacks:
-
-1. Go to AWS Console → CloudFormation
-
-2. Delete the following stacks (in this order):
-   - **EKS Cluster Stack** (name contains "EKS" or "demo-aws-cluster")
-   - **VS Code Server Stack** (name contains "VSCode" or "vscode-server")
-
-3. Wait for both stacks to finish deleting (~10 minutes for EKS, ~5 minutes for VS Code Server)
-
-Alternatively, use AWS CLI:
-
-```bash
-# Get stack names
-aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE --query 'StackSummaries[?contains(StackName, `workshop`)].StackName' --output table
-
-# Delete EKS cluster stack
-aws cloudformation delete-stack --stack-name <EKS-STACK-NAME>
-
-# Delete VS Code Server stack
-aws cloudformation delete-stack --stack-name <VSCODE-STACK-NAME>
-
-# Monitor deletion progress
-aws cloudformation describe-stacks --stack-name <STACK-NAME> --query 'Stacks[0].StackStatus'
-```
-
-### Step 5: Verify All Resources are Deleted
-
-Use these AWS CLI commands to verify no workshop resources remain:
-
-```bash
-# Check for remaining ECS clusters
-aws ecs list-clusters --query 'clusterArns[?contains(@, `otel-ai-chatbot`) || contains(@, `demo-aws-cluster`)]'
-
-# Check for remaining OpenSearch domains
-aws opensearch list-domain-names --query 'DomainNames[?contains(DomainName, `otel-ai-chatbot`)]'
-
-# Check for remaining ECR repositories
-aws ecr describe-repositories --query 'repositories[?contains(repositoryName, `otel-ai-chatbot`)]'
-
-# Check for remaining load balancers
-aws elbv2 describe-load-balancers --query 'LoadBalancers[?contains(LoadBalancerName, `otel-ai-chatbot`)]'
-
-# Check for remaining VPCs (filter for workshop VPCs)
-aws ec2 describe-vpcs --filters "Name=tag:Project,Values=otel-ai-chatbot" --query 'Vpcs[].VpcId'
-```
-
-If any of these commands return resources, manually delete them via AWS Console or CLI.
-
-### Step 6: Clean Up Honeycomb (Optional)
+### Step 4: Clean Up Honeycomb (Optional)
 
 If you created a Honeycomb account specifically for this workshop:
 
@@ -140,7 +89,7 @@ If you created a Honeycomb account specifically for this workshop:
 
 ::alert[**Note**: Honeycomb has a generous free tier. You may want to keep your account for future observability projects!]{type="info"}
 
-### Step 7: Clean Up Pulumi Cloud (Optional)
+### Step 5: Clean Up Pulumi Cloud (Optional)
 
 If you created a Pulumi Cloud account specifically for this workshop:
 
@@ -275,13 +224,6 @@ Thank you for participating in this workshop! We hope you gained valuable insigh
 - [Pulumi Documentation](https://www.pulumi.com/docs/)
 - [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-
-### Share Your Feedback
-
-We'd love to hear about your experience! Please share feedback:
-- Workshop Survey: [Link to be provided]
-- Twitter: Use hashtag #HoneycombPulumiWorkshop
-- GitHub: Star the workshop repository
 
 ---
 
