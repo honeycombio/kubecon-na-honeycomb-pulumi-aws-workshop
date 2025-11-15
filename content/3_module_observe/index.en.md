@@ -333,16 +333,38 @@ chat.request               545ms  (aggregate)
 
 Now let's see if this is an infrastructure issue (undersized resources) or an application issue.
 
-1. Navigate to **CloudWatch Metrics** in AWS Console
+### Approach 1: Using Trace Data to Infer Resource Constraints
 
-2. Check ECS metrics for your service:
-   - **CPUUtilization**: Check if consistently >80%
-   - **MemoryUtilization**: Check if consistently >80%
+Even without direct infrastructure metrics in Honeycomb, we can infer resource constraints from trace patterns:
 
-3. Run this command to get current utilization:
+1. **Create a query to analyze request patterns under load**:
+   - **VISUALIZE**: `COUNT`, `P95(duration_ms)`
+   - **WHERE**: `name` = `chat.request`
+   - **GROUP BY**: `time` (1-minute buckets)
+   - **Time Range**: Last 1 hour
+
+2. **Look for correlation between request rate and latency**:
+   - If P95 latency increases linearly with request count → CPU/memory constraint
+   - If P95 latency stays flat with increased load → external bottleneck (Bedrock, OpenSearch)
+
+3. **Query for signs of resource contention**:
+   - **VISUALIZE**: `P95(duration_ms)`
+   - **WHERE**: `name` = `genai.chat.completion`
+   - **GROUP BY**: Create heatmap over time
+   - Look for "spiky" patterns indicating throttling or queuing
+
+**Expected observation from traces:**
+- During high request rates, ALL operations slow down (not just Bedrock)
+- This suggests CPU contention in the ECS task
+- The 0.5 vCPU allocation is insufficient under load
+
+### Approach 2: Query CloudWatch Metrics via CLI
+
+If you need to confirm with infrastructure metrics:
 
 ```bash
-pulumi env run honeycomb-pulumi-workshop-dev -i -- aws cloudwatch get-metric-statistics \
+cd /workshop/ai-workshop/pulumi
+pulumi env run honeycomb-pulumi-workshop/ws -i -- aws cloudwatch get-metric-statistics \
   --namespace AWS/ECS \
   --metric-name CPUUtilization \
   --dimensions Name=ServiceName,Value=$(pulumi stack output ecsServiceName | tr -d '"') \
@@ -357,7 +379,9 @@ pulumi env run honeycomb-pulumi-workshop-dev -i -- aws cloudwatch get-metric-sta
 - CPU utilization: 60-70% average, spikes to 85-90%
 - Memory utilization: 75-80% consistent
 
-**Analysis**: The ECS task is undersized (0.5 vCPU, 1GB RAM). Under load, it's CPU-constrained, which makes Bedrock calls appear even slower due to CPU contention.
+::alert[**Production Best Practice**: For production environments, configure CloudWatch Metric Streams to send ECS metrics directly to Honeycomb using OTLP format. This allows you to correlate infrastructure metrics (CPU, memory) with application traces in a single interface. See [Honeycomb CloudWatch Integration](https://docs.honeycomb.io/integrations/metrics/aws-cloudwatch/) for setup instructions using Kinesis Firehose.]{type="info"}
+
+**Analysis**: The ECS task is undersized (0.5 vCPU, 1GB RAM). Under load, it's CPU-constrained, which makes Bedrock calls appear even slower due to CPU contention. The trace data correlates with infrastructure limits.
 
 ## Step 6: Advanced Technique - Derived Columns
 
