@@ -63,7 +63,18 @@ The ai-workshop application already has complete OpenTelemetry instrumentation. 
 
    **Key Insight**: Instrumentation is initialized **before** any other imports. This ensures auto-instrumentation captures all operations.
 
-3. **Review the tracing configuration**:
+3. **Best Practice - High-Cardinality Attributes**:
+
+   When instrumenting your application, Honeycomb excels at handling **high-cardinality data**—attributes with many unique values that traditional monitoring tools struggle with. The application includes attributes like:
+
+   - `user.id` or `session.id` - Unique per user/session
+   - `request.id` - Unique per request
+   - `llm.model` - Specific model version used
+   - `deployment.environment` - Environment identifier
+
+   ::alert[**Honeycomb Advantage**: Unlike traditional metrics systems that require pre-aggregation, Honeycomb stores raw event data with all high-cardinality attributes intact. This allows you to ask questions like "Show me all requests from user X where token usage exceeded Y" without pre-defining these queries.]{type="success"}
+
+4. **Review the tracing configuration**:
    ```bash
    cat config/tracing.js | head -60
    ```
@@ -75,7 +86,7 @@ The ai-workshop application already has complete OpenTelemetry instrumentation. 
    - **Winston instrumentation** for log correlation
    - **Honeycomb-specific configuration**
 
-4. **Examine custom LLM tracing utilities**:
+5. **Examine custom LLM tracing utilities**:
    ```bash
    cat utils/llmTracing.js | head -95
    ```
@@ -287,27 +298,60 @@ Now let's generate some requests to create traces.
 
 ## Step 7: Understand the GenAI Semantic Conventions
 
-The LLM tracing follows OpenTelemetry's **emerging semantic conventions for GenAI** workloads:
+The LLM tracing follows OpenTelemetry's **standardized semantic conventions for GenAI** workloads. These conventions were recently finalized as part of OpenTelemetry's official specifications, representing a major milestone for standardizing AI observability across the industry.
 
 | Attribute | Description | Example |
 |-----------|-------------|---------|
-| `llm.provider` | LLM service provider | "bedrock", "openai", "anthropic" |
-| `llm.model` | Model identifier | "anthropic.claude-3-5-sonnet-20240620-v1:0" |
-| `llm.request_type` | Type of LLM operation | "completion", "embedding", "chat" |
-| `llm.usage.prompt_tokens` | Input tokens consumed | 652 |
-| `llm.usage.completion_tokens` | Output tokens generated | 234 |
-| `llm.usage.total_tokens` | Total tokens (input + output) | 886 |
-| `llm.duration_ms` | API call duration | 1876 |
-| `llm.response.success` | Whether call succeeded | true/false |
-| `llm.error.type` | Error type if failed | "RateLimitError" |
+| `gen_ai.system` | The GenAI system/provider | "bedrock", "openai", "anthropic" |
+| `gen_ai.request.model` | Model identifier | "anthropic.claude-3-5-sonnet-20240620-v1:0" |
+| `gen_ai.operation.name` | Type of GenAI operation | "completion", "embedding", "chat" |
+| `gen_ai.usage.input_tokens` | Input tokens consumed | 652 |
+| `gen_ai.usage.output_tokens` | Output tokens generated | 234 |
+| `gen_ai.response.finish_reasons` | Completion reason | "stop", "length", "error" |
+| `gen_ai.prompt.0.content` | First prompt content (sampling) | "You are a helpful assistant..." |
+| `gen_ai.response.id` | Unique response identifier | "msg_01ABC..." |
+| `error.type` | Error type if failed | "RateLimitError", "InvalidRequest" |
 
 **Why these attributes matter:**
-- **Cost tracking**: Token usage directly correlates to API costs
+- **Cost tracking**: Token usage directly correlates to API costs ($3-15 per million tokens)
 - **Performance monitoring**: Duration helps identify slow models or API issues
-- **Error analysis**: Distinguish between rate limits, timeouts, and other errors
-- **Model comparison**: Compare performance across different models
+- **Error analysis**: Distinguish between rate limits, timeouts, and invalid requests
+- **Model comparison**: Compare performance across different models and versions
+- **Prompt engineering**: Analyze which prompts lead to better outcomes (when sampled)
+- **User attribution**: Track which users/teams consume the most tokens
 
-::alert[**Emerging Standards**: OpenTelemetry's GenAI semantic conventions are still evolving. Check https://opentelemetry.io/docs/specs/semconv/gen-ai/ for the latest specifications.]{type="info"}
+::alert[**OpenTelemetry Standard**: As of 2025, GenAI semantic conventions are now part of the official OpenTelemetry specification. This ensures consistent instrumentation across all observability vendors. See https://opentelemetry.io/docs/specs/semconv/gen-ai/ for complete details.]{type="success"}
+
+### Best Practice: Capturing the Right Context
+
+When instrumenting GenAI applications, Honeycomb recommends capturing:
+
+1. **All errors** - Not just LLM API failures, but also:
+   - Invalid or malformed responses that cause downstream errors
+   - Timeout errors from slow responses
+   - Rate limiting and quota exceeded errors
+
+2. **User/team identifiers** - High-cardinality attributes like:
+   - `user.id` - Track per-user behavior and costs
+   - `team.id` - Analyze usage by team or organization
+   - `session.id` - Correlate multiple requests in a conversation
+
+3. **The actual prompt** (with sampling) - For debugging and optimization:
+   - Use `gen_ai.prompt.0.content` to capture the system prompt
+   - Sample at ~1% in production to avoid overwhelming data costs
+   - Always capture prompts for errors (100% sampling on failures)
+
+4. **RAG context** - If using retrieval-augmented generation:
+   - `rag.documents_retrieved` - Number of documents fetched
+   - `rag.documents_used` - Number actually included in context
+   - `rag.retrieval_latency_ms` - Time spent on vector search
+
+5. **Function/tool calls** - For agentic workflows:
+   - `gen_ai.tools_count` - Number of tools available
+   - `gen_ai.tool_calls` - Which tools were invoked
+   - Each tool call as a child span with its own attributes
+
+::alert[**Cost vs. Value**: While Honeycomb doesn't charge extra for high-cardinality attributes, consider sampling expensive data like full prompts/responses. Capture 100% of metadata (tokens, model, latency) but sample full content at 1-10% depending on volume.]{type="info"}
 
 ## Step 8: Explore Log Correlation
 
@@ -343,6 +387,31 @@ This correlation allows you to:
 - Navigate from trace → logs
 - Understand the full context of any event
 
+## Step 9: Best Practice - Deployment Markers (Optional)
+
+Honeycomb supports **markers** to annotate your telemetry data with deployment events. This helps correlate performance changes with code deployments.
+
+To create a marker when deploying:
+
+```bash
+# After a successful deployment
+HONEYCOMB_API_KEY="your-api-key"
+DATASET="otel-ai-chatbot-dev"
+
+curl https://api.honeycomb.io/1/markers/$DATASET \
+  -X POST \
+  -H "X-Honeycomb-Team: $HONEYCOMB_API_KEY" \
+  -d '{
+    "message": "Deployed v1.2.3 - Improved LLM instrumentation",
+    "type": "deploy",
+    "url": "https://github.com/your-repo/commit/abc123"
+  }'
+```
+
+Markers appear as vertical lines in your Honeycomb graphs, making it easy to see if latency increased or errors spiked after a deployment.
+
+::alert[**CI/CD Integration**: Add marker creation to your CI/CD pipeline so every deployment is automatically annotated in Honeycomb. This is invaluable for incident response and performance regression analysis.]{type="info"}
+
 ## Module Summary
 
 Congratulations! You've successfully:
@@ -350,32 +419,42 @@ Congratulations! You've successfully:
 ✅ Explored the existing OpenTelemetry instrumentation in the application
 ✅ Understood auto-instrumentation for Express, HTTP, and AWS SDK
 ✅ Reviewed custom LLM tracing with GenAI semantic conventions
+✅ Learned about high-cardinality attributes and why they matter
 ✅ Verified Honeycomb configuration in the ECS task
 ✅ Generated traffic and confirmed traces are flowing to Honeycomb
 ✅ Examined trace structure and GenAI-specific attributes
 ✅ Understood log-trace correlation
+✅ Learned best practices for sampling and capturing context
 
 ## Key Takeaways
 
-### 1. Observability is Infrastructure
+### 1. Observability-Driven Development Culture
 
-Just like you wouldn't deploy without logging or error handling, you shouldn't deploy without observability. Build it in from day one.
+Just like you wouldn't deploy without logging or error handling, you shouldn't deploy without observability. Build it in from day one. At Honeycomb, engineers add telemetry as a **core part** of every feature and bug fix, creating a culture where observability is everyone's responsibility.
 
-### 2. Auto-Instrumentation Does the Heavy Lifting
+### 2. High-Cardinality is a Feature, Not a Bug
 
-OpenTelemetry's auto-instrumentation captures 80% of telemetry with zero code changes. Custom instrumentation fills the remaining 20% for business-specific metrics.
+Traditional monitoring tools force you to aggregate away high-cardinality data (like user IDs, request IDs, model versions). Honeycomb **embraces** high-cardinality, allowing you to ask questions like "Show me all requests from user X where model Y exceeded Z tokens"—without pre-defining these queries.
 
-### 3. Configuration is Declarative
+### 3. Auto-Instrumentation Does the Heavy Lifting
 
-Environment variables control where telemetry goes, making it easy to send data to different backends without code changes (Honeycomb today, Jaeger tomorrow).
+OpenTelemetry's auto-instrumentation captures 80% of telemetry with zero code changes. Custom instrumentation fills the remaining 20% for business-specific metrics like token usage, RAG performance, and agentic workflows.
 
-### 4. GenAI Workloads Need Specialized Observability
+### 4. Configuration is Declarative
 
-Token usage, model selection, and prompt engineering directly impact cost and performance. Custom instrumentation captures these critical metrics.
+Environment variables control where telemetry goes, making it easy to send data to different backends without code changes (Honeycomb today, Jaeger tomorrow). This is the OpenTelemetry promise: **vendor-neutral instrumentation**.
 
-### 5. Context Propagation is Automatic
+### 5. GenAI Workloads Need Specialized Observability
 
-OpenTelemetry automatically propagates trace context across service boundaries (HTTP calls, async operations, etc.), giving you end-to-end visibility.
+Token usage, model selection, and prompt engineering directly impact cost and performance. The OpenTelemetry GenAI semantic conventions (now standardized) ensure consistent instrumentation across providers, making it easy to compare Bedrock vs OpenAI vs Anthropic direct.
+
+### 6. Sample Expensive Data, Capture All Metadata
+
+Capture 100% of structured metadata (tokens, model, latency, user ID), but sample expensive unstructured data like full prompts/responses at 1-10%. Always capture 100% on errors for debugging.
+
+### 7. Context Propagation is Automatic
+
+OpenTelemetry automatically propagates trace context across service boundaries (HTTP calls, async operations, AWS SDK calls), giving you end-to-end visibility from API gateway → application → Bedrock → OpenSearch without manual plumbing.
 
 ## What's Next?
 
