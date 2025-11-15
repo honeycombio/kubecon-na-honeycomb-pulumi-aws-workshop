@@ -338,8 +338,9 @@ When instrumenting GenAI applications, Honeycomb recommends capturing:
 
 3. **The actual prompt** (with sampling) - For debugging and optimization:
    - Use `gen_ai.prompt.0.content` to capture the system prompt
-   - Sample at ~1% in production to avoid overwhelming data costs
-   - Always capture prompts for errors (100% sampling on failures)
+   - **Privacy consideration**: Sample at ~1% in production to protect sensitive user data
+   - Always capture prompts for errors (100% sampling on failures) to aid debugging
+   - Consider redacting PII from prompts before sending to observability platforms
 
 4. **RAG context** - If using retrieval-augmented generation:
    - `rag.documents_retrieved` - Number of documents fetched
@@ -351,7 +352,7 @@ When instrumenting GenAI applications, Honeycomb recommends capturing:
    - `gen_ai.tool_calls` - Which tools were invoked
    - Each tool call as a child span with its own attributes
 
-::alert[**Cost vs. Value**: While Honeycomb doesn't charge extra for high-cardinality attributes, consider sampling expensive data like full prompts/responses. Capture 100% of metadata (tokens, model, latency) but sample full content at 1-10% depending on volume.]{type="info"}
+::alert[**Privacy vs. Visibility**: While Honeycomb doesn't charge extra for high-cardinality attributes, consider sampling sensitive data like full prompts/responses primarily for **privacy protection**. Capture 100% of metadata (tokens, model, latency, user IDs) but sample full prompt/response content at 1-10% depending on your privacy requirements. Always implement PII redaction for production workloads.]{type="info"}
 
 ## Step 8: Explore Log Correlation
 
@@ -448,9 +449,9 @@ Environment variables control where telemetry goes, making it easy to send data 
 
 Token usage, model selection, and prompt engineering directly impact cost and performance. The OpenTelemetry GenAI semantic conventions (now standardized) ensure consistent instrumentation across providers, making it easy to compare Bedrock vs OpenAI vs Anthropic direct.
 
-### 6. Sample Expensive Data, Capture All Metadata
+### 6. Balance Privacy and Visibility with Sampling
 
-Capture 100% of structured metadata (tokens, model, latency, user ID), but sample expensive unstructured data like full prompts/responses at 1-10%. Always capture 100% on errors for debugging.
+Capture 100% of structured metadata (tokens, model, latency, user ID), but sample sensitive unstructured data like full prompts/responses at 1-10% primarily for **privacy protection**. Always capture 100% on errors for debugging, ensuring PII is redacted first.
 
 ### 7. Context Propagation is Automatic
 
