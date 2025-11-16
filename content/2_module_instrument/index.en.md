@@ -69,7 +69,7 @@ The ai-workshop application already has complete OpenTelemetry instrumentation. 
 
    - `user.id` or `session.id` - Unique per user/session
    - `request.id` - Unique per request
-   - `llm.model` - Specific model version used
+   - `gen_ai.request.model` - Specific model version used
    - `deployment.environment` - Environment identifier
 
    ::alert[**Honeycomb Advantage**: Unlike traditional metrics systems that require pre-aggregation, Honeycomb stores raw event data with all high-cardinality attributes intact. This allows you to ask questions like "Show me all requests from user X where token usage exceeded Y" without pre-defining these queries.]{type="success"}
@@ -92,10 +92,10 @@ The ai-workshop application already has complete OpenTelemetry instrumentation. 
    ```
 
    The `traceLLMCall()` function wraps Bedrock API calls with:
-   - **GenAI semantic conventions**: `llm.provider`, `llm.model`, `llm.request_type`
-   - **Token usage tracking**: `llm.usage.prompt_tokens`, `llm.usage.completion_tokens`
-   - **Error handling**: Proper span status and exception recording
-   - **Duration tracking**: `llm.duration_ms`
+   - **GenAI semantic conventions v1.0**: `gen_ai.system`, `gen_ai.operation.name`, `gen_ai.request.model`
+   - **Token usage tracking**: `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`
+   - **Error handling**: Proper span status, exception recording, and `error.type` attribute
+   - **Response metadata**: `gen_ai.response.id`, `gen_ai.response.finish_reasons`
 
 ::alert[**Production Pattern**: Custom instrumentation captures business-specific metrics (token usage, model performance) that auto-instrumentation can't infer. This is critical for cost monitoring and SLO tracking.]{type="success"}
 
@@ -112,7 +112,7 @@ The application uses `getNodeAutoInstrumentations()` to automatically instrument
 **Example trace structure** you'll see:
 ```
 POST /api/chat (Express auto-instrumentation)
-├─ llm.bedrock.call (Custom LLM instrumentation)
+├─ gen_ai.bedrock.chat (Custom GenAI instrumentation)
 │  └─ AWS Bedrock InvokeModel (AWS SDK auto-instrumentation)
 ├─ db.vector.search (Custom instrumentation - future enhancement)
 │  └─ HTTPS POST OpenSearch (HTTP auto-instrumentation)
@@ -285,14 +285,15 @@ Now let's generate some requests to create traces.
 
 5. **Examine span attributes**:
 
-   Click on the `llm.bedrock.call` span to see attributes:
-   - `llm.provider` = "bedrock"
-   - `llm.model` = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-   - `llm.request_type` = "completion"
-   - `llm.usage.prompt_tokens` = 652
-   - `llm.usage.completion_tokens` = 234
-   - `llm.usage.total_tokens` = 886
-   - `llm.duration_ms` = 1876
+   Click on the `gen_ai.bedrock.chat` span to see attributes:
+   - `gen_ai.system` = "aws.bedrock"
+   - `gen_ai.operation.name` = "chat"
+   - `gen_ai.request.model` = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+   - `gen_ai.usage.input_tokens` = 652
+   - `gen_ai.usage.output_tokens` = 234
+   - `gen_ai.response.finish_reasons` = ["stop"]
+   - `gen_ai.response.id` = "msg_01ABC..."
+   - `server.address` = "bedrock-runtime.us-east-1.amazonaws.com"
 
 ::alert[**Success!** You're now seeing production-grade observability data. The application was instrumented from day one, and you only had to configure where to send the data.]{type="success"}
 

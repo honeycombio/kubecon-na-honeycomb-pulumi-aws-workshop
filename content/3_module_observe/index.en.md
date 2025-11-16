@@ -104,7 +104,7 @@ Press `Ctrl+C` after observing requests flowing through.
    ├─ POST /api/chat (345ms)
    │  ├─ db.vector.search (120ms)
    │  │  └─ HTTPS POST OpenSearch (115ms)
-   │  ├─ genai.chat.completion (210ms)
+   │  ├─ gen_ai.bedrock.chat (210ms)
    │  │  └─ AWS Bedrock InvokeModel (205ms)
    │  └─ Response serialization (5ms)
    ```
@@ -136,7 +136,7 @@ Honeycomb's power comes from its ability to slice and dice high-cardinality data
 ```
 Span Name                    P50    P95    P99
 -------------------------------------------------
-genai.chat.completion       200ms  350ms  500ms
+gen_ai.bedrock.chat         200ms  350ms  500ms
 db.vector.search            100ms  180ms  250ms
 chat.request                320ms  550ms  750ms
 POST /api/chat              315ms  545ms  745ms
@@ -180,10 +180,10 @@ POST /api/chat              315ms  545ms  745ms
 
 **Expected Results** (if errors exist):
 ```
-Span Name                Error Message                    Count
----------------------------------------------------------------
-db.vector.search        Connection timeout                  3
-genai.chat.completion   Rate limit exceeded                 1
+Span Name                  Error Message                    Count
+-----------------------------------------------------------------------
+db.vector.search           Connection timeout                  3
+gen_ai.bedrock.chat        Rate limit exceeded                 1
 ```
 
 **Insights:**
@@ -255,14 +255,18 @@ Honeycomb's **Query Assistant** uses AI to translate natural language questions 
 
    Query Assistant translates to:
    - VISUALIZE: `P99(duration_ms)`
-   - WHERE: `name` = `genai.chat.completion`
+   - WHERE: `name` = `gen_ai.bedrock.chat`
    - ORDER BY: `P99(duration_ms)` DESC
    - Time Range: Last 1 hour
 
    **Example 2**: "Which users are consuming the most tokens?"
 
-   Query Assistant translates to:
-   - VISUALIZE: `SUM(gen_ai.usage.input_tokens)`, `SUM(gen_ai.usage.output_tokens)`
+   First, create a derived column (see Step 6 for details):
+   - **Name**: `gen_ai.usage.total_tokens`
+   - **Expression**: `SUM($gen_ai.usage.input_tokens, $gen_ai.usage.output_tokens)`
+
+   Then Query Assistant translates to:
+   - VISUALIZE: `SUM(gen_ai.usage.total_tokens)`
    - GROUP BY: `user.id`
    - ORDER BY: `SUM(gen_ai.usage.total_tokens)` DESC
    - LIMIT: 20
@@ -287,7 +291,9 @@ The **HAVING** clause filters on aggregated results, which is essential when wor
 
 **Example: Find users with excessive token usage**
 
-1. Create a query:
+First, ensure you've created the `gen_ai.usage.total_tokens` derived column (from Example 2 above).
+
+Then create a query:
    - **VISUALIZE**: `SUM(gen_ai.usage.total_tokens)`, `COUNT`
    - **GROUP BY**: `user.id`
    - **HAVING**: `SUM(gen_ai.usage.total_tokens)` > 10000
@@ -322,7 +328,7 @@ Let's create a query specifically to identify our bottleneck:
 ```
 Operation                   P95 Duration
 -----------------------------------------
-genai.chat.completion       350ms  ← SLOWEST
+gen_ai.bedrock.chat         350ms  ← SLOWEST
 db.vector.search           180ms  ← SECOND SLOWEST
 chat.request               545ms  (aggregate)
 ```
@@ -426,28 +432,45 @@ Want to see which specific ECS services or clusters are having resource issues?
 
 **Derived columns** let you create new fields from existing data using mathematical operations or string manipulation. This is powerful for calculating metrics not captured during instrumentation.
 
-**Example: Calculate Cost Per Request**
+### Essential Derived Columns for GenAI
 
-1. In Honeycomb, go to **Dataset Settings** → **Derived Columns**
+In Honeycomb, go to **Dataset Settings** → **Derived Columns** and create these:
 
-2. Create a new derived column:
+**1. Total Tokens** (required for v1.0 conventions)
+
+   - **Name**: `gen_ai.usage.total_tokens`
+   - **Expression**: `SUM($gen_ai.usage.input_tokens, $gen_ai.usage.output_tokens)`
+   - **Description**: "Total tokens (input + output) per request"
+
+   **Why needed**: OpenTelemetry GenAI v1.0 only defines `input_tokens` and `output_tokens`. This derived column lets you query total usage in a single metric.
+
+**2. Cost Per Request**
+
    - **Name**: `cost_per_request_usd`
    - **Expression**:
      ```
-     (gen_ai.usage.input_tokens * 0.000003) +
-     (gen_ai.usage.output_tokens * 0.000015)
+     ($gen_ai.usage.input_tokens * 0.000003) +
+     ($gen_ai.usage.output_tokens * 0.000015)
      ```
    - **Description**: "Estimated cost in USD based on Claude 3.5 Sonnet pricing"
 
-3. Now you can query on this field:
+**3. Token Throughput**
+
+   - **Name**: `tokens_per_second`
+   - **Expression**: `$gen_ai.usage.total_tokens / ($duration_ms / 1000)`
+   - **Description**: "Tokens processed per second (throughput metric)"
+
+**4. Slow Request Indicator**
+
+   - **Name**: `is_slow_request`
+   - **Expression**: `$duration_ms > 500`
+   - **Description**: "Boolean flag for requests exceeding 500ms"
+
+Now you can query using these derived columns:
    - **VISUALIZE**: `SUM(cost_per_request_usd)`
    - **GROUP BY**: `user.id`
+   - **ORDER BY**: `SUM(cost_per_request_usd)` DESC
    - **Time Range**: Last 24 hours
-
-**Other useful derived columns:**
-- `tokens_per_second`: `gen_ai.usage.total_tokens / (duration_ms / 1000)` - Throughput metric
-- `is_slow_request`: `duration_ms > 500` - Boolean for slow requests
-- `error_rate`: `COUNT WHERE error = true / COUNT` - Percentage (use HAVING)
 
 ::alert[**Derived Columns Best Practice**: Use derived columns for calculations you'll query repeatedly. They're computed at query time, so there's no storage overhead, but they save you from repeating complex expressions in every query.]{type="success"}
 
