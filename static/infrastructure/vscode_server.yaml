@@ -739,18 +739,72 @@ Resources:
                 - chmod +x get-helm-3.sh && ./get-helm-3.sh
                 - helm version --short
                 - echo "helm installed"
-          - name: InstallDocker
+          - name: InstallDockerDnf
             action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - al2023
             inputs:
               timeoutSeconds: 300
               runCommand:
-                - sudo yum update -y
-                - sudo yum install -y docker
-                - sudo service docker start
-                - sudo usermod -a -G docker ${VSCodeUser}:${VSCodeUser}
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} docker
-                - sudo docker ps 
-                - echo "docker installed"
+                - '#!/bin/bash'
+                - dnf install -y docker amazon-ecr-credential-helper
+                - !Sub usermod -aG docker ${VSCodeUser}
+                - !Sub sudo -u ${VSCodeUser} newgrp docker
+                - !Sub systemctl restart code-server@${VSCodeUser}
+                - systemctl start docker.service
+                - !Sub |
+                    if ! sudo -u ${VSCodeUser} --login code-server --install-extension ms-azuretools.vscode-docker --force; then
+                        echo "Failed to install ms-azuretools.vscode-docker"
+                        return 1
+                    fi
+                - !Sub mkdir -p /home/${VSCodeUser}/.docker
+                - !Sub |
+                  tee /home/${VSCodeUser}/.docker/config.json <<EOF
+                  {
+                    "credsStore": "ecr-login"
+                  }
+                  EOF
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}/.docker
+                - echo "Docker installed. Checking configuration"
+                - docker --version
+                - systemctl status docker.service
+          - name: InstallDockerApt
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - ubuntu
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dpkg --configure -a
+                # - curl -fsSL https://get.docker.com | bash
+                - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                - echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release --codename --short) stable" > /etc/apt/sources.list.d/docker.list
+                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker-ce docker-ce-cli containerd.io amazon-ecr-credential-helper
+                - !Sub usermod -aG docker ${VSCodeUser}
+                - !Sub sudo -u ${VSCodeUser} newgrp docker
+                - !Sub systemctl restart code-editor@${VSCodeUser}
+                - systemctl start docker.service
+                - !Sub |
+                    if ! sudo -u ${VSCodeUser} --login code-server --install-extension ms-azuretools.vscode-docker --force; then
+                        echo "Failed to install ms-azuretools.vscode-docker"
+                        return 1
+                    fi
+                - !Sub mkdir -p /home/${VSCodeUser}/.docker
+                - !Sub |
+                  tee /home/${VSCodeUser}/.docker/config.json <<EOF
+                  {
+                    "credsStore": "ecr-login"
+                  }
+                  EOF
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}/.docker
+                - echo "Docker installed. Checking configuration"
+                - docker --version
+                - systemctl status docker.service
 
   SSMDocLambdaRole:
     Type: AWS::IAM::Role
