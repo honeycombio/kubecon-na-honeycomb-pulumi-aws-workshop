@@ -613,7 +613,7 @@ Before deploying, let's understand what Pulumi will create:
    pulumi config env add honeycomb-pulumi-workshop/ws
    ```
 
-   This creates/updates `Pulumi.dev.yaml` with:
+   This creates/updates `Pulumi.ws.yaml` with:
    ```yaml
    environment:
      - honeycomb-pulumi-workshop/ws
