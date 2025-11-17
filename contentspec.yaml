@@ -31,14 +31,21 @@ infrastructure:
         - templateParameter: RepoUrl
           defaultValue: https://github.com/dirien/ai-workshop
         - templateParameter: HomeFolder
-          defaultValue: /workshop/
+          defaultValue: /workshop/ai-workshop
       label: VS Code Server
       participantVisibleStackOutputs:
         - URL
         - Password    
 
-    - templateLocation: static/infrastructure/eks-cluster.yaml
-      label: EKS Cluster for Demo Application
+    - templateLocation: static/infrastructure/pulumi-oidc.yaml
+      label: Pulumi OIDC provider
+      parameters:
+      - templateParameter: PulumiOrgName
+        defaultValue: workshop
+      - templateParameter: PulumiProjectName
+        defaultValue: pulumi-idp
+      - templateParameter: RoleName
+        defaultValue: pulumi-demo-org-deployments-oidc
 # END Infrastructure
 
 # START Accounts

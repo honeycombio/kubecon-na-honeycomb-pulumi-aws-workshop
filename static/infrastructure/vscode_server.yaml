@@ -748,6 +748,7 @@ Resources:
                 - sudo yum install -y docker
                 - sudo service docker start
                 - sudo usermod -a -G docker ${VSCodeUser}:${VSCodeUser}
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} docker
                 - sudo docker ps 
                 - echo "docker installed"
 
