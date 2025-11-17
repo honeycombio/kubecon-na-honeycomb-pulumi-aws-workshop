@@ -42,7 +42,23 @@ By the end of this module, you'll have a fully functional GenAI chatbot running 
    # Should output: /workshop
    ```
 
-4. Verify required tools are installed:
+4. Install Pulumi CLI and Pulumi ESC, and restart the terminal 
+   ```bash
+   curl -fsSL https://get.pulumi.com | sh
+   curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+   ```
+
+5. Install Node
+   ```bash
+   # Download and install nvm:
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+   \. "$HOME/.nvm/nvm.sh"
+   nvm install 24
+   node -v 
+   npm -v 
+   ```
+
+5. Verify all required tools are installed:
    ```bash
    pulumi version
    aws --version
@@ -79,6 +95,7 @@ Expected output:
 
    ```bash
    pulumi login
+   esc login
    ```
 
    You'll see a prompt like this:
@@ -249,7 +266,7 @@ values:
     creds:
       fn::open::aws-login:
         oidc:
-          roleArn: arn:aws:iam::052848974346:role/pulumi-demo-org-deployments-oidc
+          roleArn: arn:aws:iam::123456789012:role/pulumi-demo-org-deployments-oidc
           sessionName: pulumi-environments-session
           duration: 1h
 

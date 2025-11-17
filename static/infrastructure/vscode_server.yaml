@@ -706,16 +706,6 @@ Resources:
                 - !Sub sudo -u ${VSCodeUser} /tmp/q/install.sh --no-confirm
                 - rm -rf /tmp/q
                 - echo "Amazon Q Command line installed"
-          - name: InstallPulumi
-            action: aws:runShellScript
-            inputs:
-              timeoutSeconds: 300
-              runCommand:
-                - curl -fsSL https://get.pulumi.com | sh
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} pulumi
-                - chmod +x pulumi
-                - sudo mv -v pulumi /usr/local/bin
-                - pulumi version 
           - name: InstallKubectl
             action: aws:runShellScript
             inputs:
@@ -749,6 +739,17 @@ Resources:
                 - chmod +x get-helm-3.sh && ./get-helm-3.sh
                 - helm version --short
                 - echo "helm installed"
+          - name: InstallDocker
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - sudo yum update -y
+                - sudo yum install -y docker
+                - sudo service docker start
+                - sudo usermod -a -G docker ${VSCodeUser}:${VSCodeUser}
+                - sudo docker ps 
+                - echo "docker installed"
 
   SSMDocLambdaRole:
     Type: AWS::IAM::Role

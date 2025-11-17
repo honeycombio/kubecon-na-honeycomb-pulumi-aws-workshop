@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'OIDC Identity Provider and IAM Role for Pulumi integration with api.pulumi.com'
+
+Parameters:
+  PulumiOrgName:
+    Type: String
+    Description: Your Pulumi organization name
+    AllowedPattern: '^[a-zA-Z0-9-_]+$'
+    ConstraintDescription: Must contain only alphanumeric characters, hyphens, and underscores
+  
+  PulumiProjectName:
+    Type: String
+    Description: Your Pulumi project name (optional - leave empty for all projects)
+    Default: ""
+    AllowedPattern: '^$|^[a-zA-Z0-9-_]+$'
+    ConstraintDescription: Must be empty or contain only alphanumeric characters, hyphens, and underscores
+  
+  RoleName:
+    Type: String
+    Description: Name for the IAM role (optional - leave empty for auto-generated name)
+    Default: ""
+    AllowedPattern: '^$|^[\w+=,.@-]{1,64}$'
+    ConstraintDescription: Must be empty or 1-64 characters containing alphanumeric characters and +=,.@-
+
+Conditions:
+  HasProjectName: !Not [!Equals [!Ref PulumiProjectName, ""]]
+  HasCustomRoleName: !Not [!Equals [!Ref RoleName, ""]]
+
+Resources:
+  PulumiOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://api.pulumi.com/oidc
+      ClientIdList:
+        - !Ref PulumiOrgName
+      ThumbprintList:
+        # Pulumi's OIDC thumbprint - this may need to be updated if Pulumi changes their certificate
+        - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+      Tags:
+        - Key: Purpose
+          Value: Pulumi OIDC Integration
+        - Key: Organization
+          Value: !Ref PulumiOrgName
+
+  PulumiExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !If
+        - HasCustomRoleName
+        - !Ref RoleName
+        - !Ref AWS::NoValue
+      Description: !Sub 'IAM role for Pulumi OIDC integration with organization ${PulumiOrgName}'
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref PulumiOIDCProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                !Sub 'api.pulumi.com/oidc:aud': !Ref PulumiOrgName
+              StringLike:
+                !Sub 'api.pulumi.com/oidc:sub': !If
+                  - HasProjectName
+                  - !Sub 'pulumi:environments:org:${PulumiOrgName}:project:${PulumiProjectName}:*'
+                  - !Sub 'pulumi:environments:org:${PulumiOrgName}:*'
+      ManagedPolicyArns:
+        # Add the AWS managed policies you need for your Pulumi deployments
+        # These are examples - adjust based on your specific requirements
+        - arn:aws:iam::aws:policy/PowerUserAccess
+        # Alternative: Use more restrictive policies
+        # - arn:aws:iam::aws:policy/EC2FullAccess
+        # - arn:aws:iam::aws:policy/S3FullAccess
+        # - arn:aws:iam::aws:policy/IAMFullAccess
+      Tags:
+        - Key: Purpose
+          Value: Pulumi OIDC Integration
+        - Key: Organization
+          Value: !Ref PulumiOrgName
+
+  # Optional: Custom policy for more granular permissions
+  PulumiCustomPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: PulumiCustomPermissions
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              # CloudFormation permissions for Pulumi's AWS provider
+              - cloudformation:*
+              # S3 permissions for state management
+              - s3:GetBucketLocation
+              - s3:ListBucket
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              # Additional permissions as needed
+              - sts:GetCallerIdentity
+            Resource: '*'
+      Roles:
+        - !Ref PulumiExecutionRole
+
+Outputs:
+  OIDCProviderArn:
+    Description: ARN of the Pulumi OIDC Identity Provider
+    Value: !Ref PulumiOIDCProvider
+    Export:
+      Name: !Sub '${AWS::StackName}-OIDCProviderArn'
+
+  RoleArn:
+    Description: ARN of the IAM Role for Pulumi
+    Value: !GetAtt PulumiExecutionRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-RoleArn'
+
+  RoleName:
+    Description: Name of the IAM Role for Pulumi
+    Value: !Ref PulumiExecutionRole
+    Export:
+      Name: !Sub '${AWS::StackName}-RoleName'
+
+  ConfigurationInstructions:
+    Description: Instructions for configuring Pulumi
+    Value: !Sub |
+      Configure your Pulumi ESC environment with:
+      aws:
+        oidc:
+          roleArn: ${PulumiExecutionRole.Arn}
+          sessionName: pulumi-session
