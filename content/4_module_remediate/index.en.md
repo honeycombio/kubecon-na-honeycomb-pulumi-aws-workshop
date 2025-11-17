@@ -44,11 +44,10 @@ Claude Code should be pre-installed in your VS Code Server environment. If you p
    claude --version
    ```
 
-   Expected output: `Claude Code v1.x.x` or similar
+   Expected output: `2.x.x (Claude Code)` or similar
 
 2. If not installed, install it by following the instructions at:
    - **Claude Code**: https://claude.ai/download
-   - **Alternative**: Visit https://docs.anthropic.com/en/docs/agents-and-tools/mcp to see MCP-compatible tools
 
 3. Verify MCP support is enabled:
    ```bash

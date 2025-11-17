@@ -16,7 +16,7 @@ Parameters:
   InstanceType:
     Description: VS code-server EC2 instance type
     Type: String
-    Default: t4g.medium
+    Default: t4g.large
     AllowedPattern: '^(t3|t4|c6|c7|m6|m7|m8)[g|i|a]?(d|n|dn|-flex)?\.(nano|micro|small|medium|large|[2|4|9|12|16|18|24|32|48]?xlarge)$'
     ConstraintDescription: Must be a valid t, c or m series EC2 instance type
   InstanceOperatingSystem:
@@ -415,6 +415,15 @@ Resources:
                 - !Sub echo 'export AWS_REGION=${AWS::Region}' >> /home/${VSCodeUser}/.bashrc
                 - !Sub echo 'export AWS_ACCOUNTID=${AWS::AccountId}' >> /home/${VSCodeUser}/.bashrc
                 - !Sub echo 'export NEXT_TELEMETRY_DISABLED=1' >> /home/${VSCodeUser}/.bashrc
+                - !Sub |
+                  # Add NVM initialization to .bashrc
+                  cat >> /home/${VSCodeUser}/.bashrc <<'EOF'
+
+                  # NVM initialization
+                  export NVM_DIR="$HOME/.nvm"
+                  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+                  EOF
                 - !Sub echo "export PS1='\[\033[01;32m\]\u:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> /home/${VSCodeUser}/.bashrc
                 - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
           - name: InstallAWSCLI
@@ -706,39 +715,13 @@ Resources:
                 - !Sub sudo -u ${VSCodeUser} /tmp/q/install.sh --no-confirm
                 - rm -rf /tmp/q
                 - echo "Amazon Q Command line installed"
-          - name: InstallKubectl
+          - name: InstallClaudeCode
             action: aws:runShellScript
             inputs:
               timeoutSeconds: 300
               runCommand:
-                - kubectl_version='1.31.7'
-                - curl -LO "https://dl.k8s.io/release/v1.31.7/bin/linux/arm64/kubectl"
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} kubectl
-                - chmod +x kubectl
-                - sudo mv -v kubectl /usr/local/bin
-                - kubectl version --client
-                - echo "kubectl installed"
-          - name: InstallEksctl
-            action: aws:runShellScript
-            inputs:
-              timeoutSeconds: 300
-              runCommand:
-                - curl --silent --fail --retry 5 --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_arm64.tar.gz" | tar xz -C /tmp
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /tmp/eksctl
-                - chmod +x /tmp/eksctl
-                - sudo mv -v /tmp/eksctl /usr/local/bin
-                - eksctl version
-                - echo "eksctl installed"
-          - name: InstallHelm
-            action: aws:runShellScript
-            inputs:
-              timeoutSeconds: 300
-              runCommand:
-                - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get-helm-3.sh
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} get-helm-3.sh
-                - chmod +x get-helm-3.sh && ./get-helm-3.sh
-                - helm version --short
-                - echo "helm installed"
+                - '#!/bin/bash'
+                - curl -fsSL https://claude.ai/install.sh | bash
           - name: InstallDockerDnf
             action: aws:runShellScript
             precondition:
@@ -779,32 +762,65 @@ Resources:
             inputs:
               timeoutSeconds: 300
               runCommand:
-                - '#!/bin/bash'
-                - dpkg --configure -a
-                # - curl -fsSL https://get.docker.com | bash
-                - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-                - echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release --codename --short) stable" > /etc/apt/sources.list.d/docker.list
-                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker-ce docker-ce-cli containerd.io amazon-ecr-credential-helper
-                - !Sub usermod -aG docker ${VSCodeUser}
-                - !Sub sudo -u ${VSCodeUser} newgrp docker
-                - !Sub systemctl restart code-editor@${VSCodeUser}
-                - systemctl start docker.service
-                - !Sub |
-                    if ! sudo -u ${VSCodeUser} --login code-server --install-extension ms-azuretools.vscode-docker --force; then
-                        echo "Failed to install ms-azuretools.vscode-docker"
-                        return 1
-                    fi
-                - !Sub mkdir -p /home/${VSCodeUser}/.docker
-                - !Sub |
-                  tee /home/${VSCodeUser}/.docker/config.json <<EOF
-                  {
-                    "credsStore": "ecr-login"
-                  }
-                  EOF
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}/.docker
-                - echo "Docker installed. Checking configuration"
-                - docker --version
-                - systemctl status docker.service
+              - '#!/bin/bash'
+              - dpkg --configure -a
+              # - curl -fsSL https://get.docker.com | bash
+              - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+              - echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release --codename --short) stable" > /etc/apt/sources.list.d/docker.list
+              - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker-ce docker-ce-cli containerd.io amazon-ecr-credential-helper
+              - !Sub usermod -aG docker ${VSCodeUser}
+              - !Sub sudo -u ${VSCodeUser} newgrp docker
+              - !Sub systemctl restart code-editor@${VSCodeUser}
+              - systemctl start docker.service
+              - !Sub |
+                if ! sudo -u ${VSCodeUser} --login code-server --install-extension ms-azuretools.vscode-docker --force; then
+                    echo "Failed to install ms-azuretools.vscode-docker"
+                    return 1
+                fi
+              - !Sub mkdir -p /home/${VSCodeUser}/.docker
+              - !Sub |
+                tee /home/${VSCodeUser}/.docker/config.json <<EOF
+                {
+                  "credsStore": "ecr-login"
+                }
+                EOF
+              - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}/.docker
+              - echo "Docker installed. Checking configuration"
+              - docker --version
+              - systemctl status docker.service
+          - name: InstallPulumiAndNode
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 600
+              runCommand:
+              - '#!/bin/bash'
+              - !Sub |
+                # Install Pulumi CLI
+                echo "Installing Pulumi CLI..."
+                sudo -u ${VSCodeUser} bash -c 'curl -fsSL https://get.pulumi.com | sh'
+
+                # Install Pulumi ESC CLI
+                echo "Installing Pulumi ESC CLI..."
+                sudo -u ${VSCodeUser} bash -c 'curl -fsSL https://get.pulumi.com/esc/install.sh | sh'
+
+                # Install NVM and Node.js
+                echo "Installing NVM and Node.js..."
+                sudo -u ${VSCodeUser} bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash'
+                sudo -u ${VSCodeUser} bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install 24'
+
+                # Add Pulumi and NVM to PATH in .bashrc (already done by install scripts, but ensure it's there)
+                if ! grep -q 'export PATH=.*\.pulumi/bin' /home/${VSCodeUser}/.bashrc; then
+                  echo 'export PATH=$PATH:$HOME/.pulumi/bin' >> /home/${VSCodeUser}/.bashrc
+                fi
+
+                # Verify installations
+                echo "Verifying installations..."
+                sudo -u ${VSCodeUser} bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && node -v'
+                sudo -u ${VSCodeUser} bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && npm -v'
+                sudo -u ${VSCodeUser} bash -c 'export PATH=$PATH:$HOME/.pulumi/bin && pulumi version'
+                sudo -u ${VSCodeUser} bash -c 'export PATH=$PATH:$HOME/.pulumi/bin && esc version'
+
+                echo "Pulumi and Node.js installation completed"
 
   SSMDocLambdaRole:
     Type: AWS::IAM::Role

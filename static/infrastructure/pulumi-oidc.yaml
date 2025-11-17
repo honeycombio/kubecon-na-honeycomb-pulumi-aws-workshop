@@ -1,5 +1,13 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'OIDC Identity Provider and IAM Role for Pulumi integration with api.pulumi.com'
+Description: |
+  OIDC Identity Provider and IAM Role for Pulumi integration with api.pulumi.com
+
+  This template creates the necessary AWS resources for Pulumi to deploy infrastructure
+  using OIDC authentication (no long-lived credentials). The role includes:
+  - PowerUserAccess: Allows management of most AWS services (EC2, ECS, VPC, OpenSearch, etc.)
+  - Custom IAM Policy: Adds IAM role/policy management for ECS task roles and service accounts
+
+  Security: OIDC tokens are short-lived (1 hour) and scoped to your Pulumi organization
 
 Parameters:
   PulumiOrgName:
@@ -32,9 +40,13 @@ Resources:
     Properties:
       Url: https://api.pulumi.com/oidc
       ClientIdList:
-        - !Ref PulumiOrgName
+        # Audience must be prefixed with 'aws:' per Pulumi ESC documentation
+        - !Sub 'aws:${PulumiOrgName}'
       ThumbprintList:
-        # Pulumi's OIDC thumbprint - this may need to be updated if Pulumi changes their certificate
+        # OIDC thumbprint for api.pulumi.com
+        # Note: AWS may automatically manage thumbprints for some OIDC providers
+        # To verify/update: aws iam get-open-id-connect-provider --open-id-connect-provider-arn <arn>
+        # Or obtain from the root CA certificate of api.pulumi.com:443
         - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
       Tags:
         - Key: Purpose
@@ -60,12 +72,10 @@ Resources:
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
-                !Sub 'api.pulumi.com/oidc:aud': !Ref PulumiOrgName
-              StringLike:
-                !Sub 'api.pulumi.com/oidc:sub': !If
-                  - HasProjectName
-                  - !Sub 'pulumi:environments:org:${PulumiOrgName}:project:${PulumiProjectName}:*'
-                  - !Sub 'pulumi:environments:org:${PulumiOrgName}:*'
+                # Audience must match 'aws:orgname' format per Pulumi ESC documentation
+                'api.pulumi.com/oidc:aud':
+                 - !Sub 'aws:${PulumiOrgName}'
+                 - !Sub '${PulumiOrgName}'
       ManagedPolicyArns:
         # Add the AWS managed policies you need for your Pulumi deployments
         # These are examples - adjust based on your specific requirements
@@ -80,7 +90,7 @@ Resources:
         - Key: Organization
           Value: !Ref PulumiOrgName
 
-  # Optional: Custom policy for more granular permissions
+  # Custom policy for IAM and additional permissions
   PulumiCustomPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -101,6 +111,41 @@ Resources:
               # Additional permissions as needed
               - sts:GetCallerIdentity
             Resource: '*'
+          # IAM permissions for creating and managing roles/policies
+          # Required for ECS task execution roles, task roles, and service-linked roles
+          - Effect: Allow
+            Action:
+              - iam:CreateRole
+              - iam:DeleteRole
+              - iam:GetRole
+              - iam:ListRoles
+              - iam:UpdateRole
+              - iam:PutRolePolicy
+              - iam:DeleteRolePolicy
+              - iam:GetRolePolicy
+              - iam:ListRolePolicies
+              - iam:AttachRolePolicy
+              - iam:DetachRolePolicy
+              - iam:ListAttachedRolePolicies
+              - iam:PassRole
+              - iam:TagRole
+              - iam:UntagRole
+              - iam:ListRoleTags
+              - iam:CreatePolicy
+              - iam:DeletePolicy
+              - iam:GetPolicy
+              - iam:GetPolicyVersion
+              - iam:ListPolicyVersions
+              - iam:CreatePolicyVersion
+              - iam:DeletePolicyVersion
+              - iam:SetDefaultPolicyVersion
+              - iam:TagPolicy
+              - iam:UntagPolicy
+            Resource: '*'
+            # For production use, consider restricting to specific resource patterns:
+            # Resource:
+            #   - !Sub 'arn:aws:iam::${AWS::AccountId}:role/otel-ai-chatbot-*'
+            #   - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/otel-ai-chatbot-*'
       Roles:
         - !Ref PulumiExecutionRole
 
@@ -124,10 +169,24 @@ Outputs:
       Name: !Sub '${AWS::StackName}-RoleName'
 
   ConfigurationInstructions:
-    Description: Instructions for configuring Pulumi
-    Value: !Sub |
-      Configure your Pulumi ESC environment with:
-      aws:
-        oidc:
-          roleArn: ${PulumiExecutionRole.Arn}
-          sessionName: pulumi-session
+    Description: Instructions for configuring Pulumi ESC environment
+    Value: !Join
+      - ''
+      - - |
+          Configure your Pulumi ESC environment with:
+
+          values:
+            aws:
+              login:
+                fn::open::aws-login:
+                  oidc:
+                    duration: 1h
+                    roleArn:
+        - !GetAtt PulumiExecutionRole.Arn
+        - |2
+
+                      sessionName: pulumi-environments-session
+          environmentVariables:
+            AWS_ACCESS_KEY_ID: ${aws.login.accessKeyId}
+            AWS_SECRET_ACCESS_KEY: ${aws.login.secretAccessKey}
+            AWS_SESSION_TOKEN: ${aws.login.sessionToken}

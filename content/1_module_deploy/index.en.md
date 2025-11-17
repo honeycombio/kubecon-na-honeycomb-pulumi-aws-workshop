@@ -36,29 +36,13 @@ By the end of this module, you'll have a fully functional GenAI chatbot running 
 
 2. Enter the **password** when prompted
 
-3. Verify you're in the `/workshop/` directory:
+3. Verify you're in the `/workshop/ai-workshop` directory:
    ```bash
    pwd
-   # Should output: /workshop
+   # Should output: /workshop/ai-workshop
    ```
-
-4. Install Pulumi CLI and Pulumi ESC, and restart the terminal 
-   ```bash
-   curl -fsSL https://get.pulumi.com | sh
-   curl -fsSL https://get.pulumi.com/esc/install.sh | sh
-   ```
-
-5. Install Node
-   ```bash
-   # Download and install nvm:
-   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-   \. "$HOME/.nvm/nvm.sh"
-   nvm install 24
-   node -v 
-   npm -v 
-   ```
-
-5. Verify all required tools are installed:
+   
+4. Verify all required tools are installed:
    ```bash
    pulumi version
    aws --version
@@ -81,6 +65,16 @@ Expected output:
    - GitLab
    - Email address
 
+   After signing up, you'll see your organization in the top-left dropdown. You can switch between your organization account and individual account:
+
+   ![Organization Dropdown](/static/images/organization-dropdown.png)
+
+   To create a workshop-specific organization, click on **Create organization** from the dropdown. Enter your organization name (e.g., `honeycomb-pulumi-ai-workshop`), agree to the terms of service, and click **Create organization**:
+
+   ![Create Organization Form](/static/images/create-organization-form.png)
+
+   ::alert[**Organization Naming**: Choose a descriptive name for your workshop organization. The name becomes part of your Pulumi Cloud URL (e.g., `https://app.pulumi.com/honeycomb-pulumi-ai-workshop`). Organization names must be unique across Pulumi Cloud.]{type="info"}
+
 2. **Create a Personal Access Token**:
 
    Once logged in to Pulumi Cloud:
@@ -95,7 +89,6 @@ Expected output:
 
    ```bash
    pulumi login
-   esc login
    ```
 
    You'll see a prompt like this:
@@ -108,7 +101,20 @@ Expected output:
 
    Paste your access token and press Enter.
 
-4. **Verify your login**:
+4. **Set the default organization**:
+
+   ```bash
+   pulumi org set-default honeycomb-pulumi-ai-workshop
+   ```
+
+   This sets your workshop organization as the default for all Pulumi operations, ensuring that new stacks and resources are created under the correct organization.
+
+   Expected output:
+   ```
+   Default organization set to honeycomb-pulumi-ai-workshop
+   ```
+
+5. **Verify your login**:
 
    ```bash
    pulumi whoami
@@ -117,9 +123,11 @@ Expected output:
    Expected output:
    ```
    User: your-username
-   Organizations: your-org
+   Organizations: honeycomb-pulumi-ai-workshop*
    Backend URL: https://api.pulumi.com
    ```
+
+   The asterisk (*) indicates your default organization.
 
 ::alert[**Security Tip**: Pulumi Personal Access Tokens provide access to your infrastructure state and should be treated like passwords. Never commit them to version control or share them in public channels.]{type="warning"}
 
@@ -226,108 +234,59 @@ Now create the workshop-specific environment that imports the AWS credentials:
 
 1. In Pulumi Cloud, navigate to **ESC** → **Environments**
 
-2. Click **Create Environment**
-   - Organization: (your organization)
-   - Environment name: `honeycomb-pulumi-workshop/ws`
+   You'll see the Environments page. Initially, it will be empty:
 
-3. Add the following YAML configuration:
+   ![Environments Page](/static/images/environments-page.png)
+
+2. Click **Create Environment**
+
+   In the dialog, fill in the following:
+   - **Project name**: `honeycomb-pulumi-workshop` (creates a new project for organizing your environments)
+   - **Environment name**: `ws` (short for "workshop")
+
+   ![Create Environment Form](/static/images/create-environment-form.png)
+
+   ::alert[**Environment Naming**: The full environment name will be `honeycomb-pulumi-workshop/ws`. This format follows the pattern `project-name/environment-name`, allowing you to organize multiple environments under the same project.]{type="info"}
+
+3. Click **Create Environment** to create the environment
+
+4. Add the following YAML configuration:
 
 ```yaml
-imports:
-  - pulumi-idp/auth  # Provides AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN)
-
 values:
+  aws:
+    login:
+      fn::open::aws-login:
+        oidc:
+          duration: 1h
+          roleArn: arn:aws:iam::343319427887:role/honeycomb-pulumi-ai-workshop-oidc
+          sessionName: pulumi-environments-session
   app:
     opensearchMasterPassword:
       fn::secret: YourStrongPassword123!
     opensearchMasterUser: admin
-    honeycombApiKey: YOUR_HONEYCOMB_API_KEY_HERE
-
+    honeycombApiKey: AZHWDqWdbw0uc1fcKXxgwE
   pulumiConfig:
     opensearchMasterPassword: ${app.opensearchMasterPassword}
     opensearchMasterUser: ${app.opensearchMasterUser}
+    anthropic-api-key: test
+    dockerBuildCloudBuilder: cloud-dirien-pulumi-test
     honeycombApiKey: ${app.honeycombApiKey}
-    aws:region: us-east-1
-```
-
-**Replace the following values:**
-- `YourStrongPassword123!` - A strong password for OpenSearch (min 8 characters, uppercase, lowercase, number, special char)
-- `YOUR_HONEYCOMB_API_KEY_HERE` - Your Honeycomb API key from Step 3
-
-**Understanding the Import Statement:**
-
-The `imports` section references another ESC environment called `pulumi-idp/auth`. This imported environment contains:
-
-```yaml
-# pulumi-idp/auth environment (actual structure)
-values:
-  aws:
-    region: us-east-1
-    creds:
-      fn::open::aws-login:
-        oidc:
-          roleArn: arn:aws:iam::123456789012:role/pulumi-demo-org-deployments-oidc
-          sessionName: pulumi-environments-session
-          duration: 1h
-
   environmentVariables:
-    AWS_ACCESS_KEY_ID: ${aws.creds.accessKeyId}
-    AWS_SECRET_ACCESS_KEY: ${aws.creds.secretAccessKey}
-    AWS_SESSION_TOKEN: ${aws.creds.sessionToken}
-    AWS_REGION: ${aws.region}
-
-  pulumiConfig:
-    aws:region: ${aws.region}
+    AWS_ACCESS_KEY_ID: ${aws.login.accessKeyId}
+    AWS_SECRET_ACCESS_KEY: ${aws.login.secretAccessKey}
+    AWS_SESSION_TOKEN: ${aws.login.sessionToken}
 ```
 
-**Key Features:**
-- Uses **OIDC authentication** (`fn::open::aws-login`) to assume an AWS IAM role
-- No static credentials stored - credentials are dynamically generated
-- Session duration: 1 hour
-- Automatically exports AWS environment variables for CLI tools
+   After entering the configuration, the Monaco editor will show the YAML on the left side and the resolved preview on the right side:
 
-**Why Use Imports Instead of One Large Environment?**
+   ![Environment Configuration Saved](/static/images/environment-configuration-saved.png)
 
-You *could* write everything in a single ESC environment without imports:
+   ::alert[**Security Note**: The `fn::secret` encryption will happen automatically when you save. Your secrets will be encrypted and stored securely by Pulumi ESC.]{type="info"}
 
-```yaml
-# Alternative: Everything in one environment (NOT recommended)
-values:
-  environmentVariables:
-    AWS_ACCESS_KEY_ID: <your-aws-access-key>
-    AWS_SECRET_ACCESS_KEY: <your-aws-secret-key>
-    AWS_SESSION_TOKEN: <optional-session-token>
+5. Click **Save**
 
-  app:
-    opensearchMasterPassword:
-      fn::secret: YourStrongPassword123!
-    honeycombApiKey: YOUR_HONEYCOMB_API_KEY_HERE
-  # ... rest of config
-```
-
-However, using imports provides significant benefits:
-
-✅ **Centralized Management**: Update AWS credentials in `pulumi-idp/auth` once, and all environments that import it automatically get the changes
-
-✅ **Segregation of Responsibility**: Infrastructure team manages `pulumi-idp/auth` (AWS credentials), while application teams manage their own app-specific secrets
-
-✅ **Reusability**: Multiple workshop environments can import the same `pulumi-idp/auth` without duplicating AWS credentials
-
-✅ **Security**: Limit who can modify AWS credentials separately from who can modify application secrets
-
-::alert[**Production Pattern**: In enterprise environments, you typically have a hierarchy of ESC environments: base credentials → team-specific configs → application-specific secrets. This allows teams to share common infrastructure while maintaining isolated application secrets.]{type="info"}
-
-**Key Configuration Points:**
-- The `imports` section brings in AWS credentials from `pulumi-idp/auth`
-- `fn::secret:` tells Pulumi ESC to encrypt these values
-- `${app.opensearchMasterPassword}` references values within the same environment
-- `pulumiConfig` values become available as Pulumi stack configuration
-
-::alert[**Note**: The `pulumi-idp/auth` import provides AWS credentials. If this import is not available in your organization, you'll need to manually add AWS credentials to the `values` section as shown in the alternative example above. Contact your Pulumi administrator for access to shared credential environments.]{type="warning"}
-
-4. Click **Save**
-
-5. **Test your ESC environment** from the terminal:
+6. **Test your ESC environment** from the terminal:
 
    ```bash
    pulumi env get honeycomb-pulumi-workshop/ws
@@ -335,7 +294,7 @@ However, using imports provides significant benefits:
 
    This should show your environment configuration (secrets will be hidden).
 
-6. **Verify AWS credentials** work:
+7. **Verify AWS credentials** work:
 
    ```bash
    pulumi env run honeycomb-pulumi-workshop/ws -i -- aws sts get-caller-identity
@@ -344,44 +303,64 @@ However, using imports provides significant benefits:
    Expected output:
    ```json
    {
-       "UserId": "AIDACKCEVSQ6C2EXAMPLE",
-       "Account": "123456789012",
-       "Arn": "arn:aws:iam::123456789012:user/your-username"
+       "UserId": "AROAU733OXMX4Q7YRO345:pulumi-environments-session",
+       "Account": "343319427887",
+       "Arn": "arn:aws:sts::343319427887:assumed-role/honeycomb-pulumi-ai-workshop-oidc/pulumi-environments-session"
    }
    ```
 
-::alert[**Troubleshooting**: If `aws sts get-caller-identity` fails, ensure the `pulumi-idp/auth` import is configured correctly or manually add AWS credentials to your ESC environment.]{type="warning"}
+   ::alert[**OIDC Authentication**: The ARN shows an assumed role, not a direct IAM user. This confirms that OIDC authentication is working correctly, with temporary credentials generated dynamically.]{type="info"}
 
-## Step 5: Clone the Workshop Repository
+::alert[**Troubleshooting**: If `aws sts get-caller-identity` fails, ensure the AWS OIDC configuration is correct in your ESC environment.]{type="warning"}
 
-1. Clone the application repository:
-   ```bash
-   cd /workshop
-   git clone https://github.com/dirien/ai-workshop.git
-   cd ai-workshop
-   ```
-
-2. Explore the project structure:
-   ```bash
-   ls -la
-   ```
-
-   Key directories:
-   - `server/` - Express.js backend with RAG implementation
-   - `client/` - React frontend
-   - `pulumi/` - Infrastructure as Code (Pulumi TypeScript)
-   - `scripts/` - Utility scripts including data ingestion
-   - `Dockerfile` - Container build configuration
-
-## Step 6: Examine the Infrastructure Code
+## Step 5: Examine the Infrastructure Code
 
 Before deploying, let's understand what Pulumi will create:
 
-1. Open the Pulumi infrastructure code:
-   ```bash
-   cd pulumi
-   cat index.ts
-   ```
+1. **Explore the project structure in VS Code Server**:
+
+   The workshop repository contains a well-organized GenAI application with the following structure:
+
+   ![VS Code Project Structure](/static/images/vscode-project-structure.png)
+
+   **Key directories and their purposes:**
+
+   - **`client/`** - React frontend application
+     - Contains the user interface for the AI chatbot
+     - Built with React and served alongside the backend
+
+   - **`server/`** - Express.js backend with RAG implementation
+     - Handles API requests and AI chat logic
+     - Integrates with AWS Bedrock (Claude) and OpenSearch
+     - Implements OpenTelemetry instrumentation
+
+   - **`pulumi/`** - Infrastructure as Code (Pulumi TypeScript)
+     - Defines all AWS resources (ECS, OpenSearch, VPC, ALB, etc.)
+     - Contains `index.ts` with complete infrastructure definition
+     - Configuration files: `Pulumi.yaml`, `Pulumi.ws.yaml`
+
+   - **`scripts/`** - Utility scripts
+     - Data ingestion scripts for populating OpenSearch vector store
+     - Documentation processing utilities
+
+   - **`.devcontainer/`** - Development container configuration
+     - VS Code dev container setup for consistent environments
+
+   - **`Dockerfile`** - Multi-stage container build configuration
+     - Builds both frontend and backend into a single optimized image
+
+   - **Configuration files** (root directory):
+     - `package.json` - Root Node.js dependencies
+     - `.gitignore` - Git ignore patterns
+     - `.dockerignore` - Docker build exclusions
+     - `env.example` - Environment variable template
+     - `README.md` - Project documentation
+
+   **Open the Pulumi infrastructure code** by clicking on the `pulumi` folder in the Explorer sidebar, then clicking on `index.ts`:
+
+   ![Pulumi index.ts File](/static/images/vscode-pulumi-index-ts.png)
+
+   This file contains the complete infrastructure definition, including ECR repositories, VPC configuration, ECS cluster, OpenSearch domain, and Application Load Balancer setup.
 
 2. **Review key components in `pulumi/index.ts`**:
 
@@ -608,11 +587,11 @@ Before deploying, let's understand what Pulumi will create:
 
 ::alert[**Infrastructure as Code Benefits**: This entire application stack is defined in ~470 lines of TypeScript. Pulumi handles dependency ordering, resource creation, and state management automatically.]{type="info"}
 
-## Step 7: Initialize Pulumi Stack
+## Step 6: Initialize Pulumi Stack
 
 1. Navigate to the Pulumi directory:
    ```bash
-   cd /workshop/ai-workshop/pulumi
+   cd pulumi
    ```
 
 2. Install Pulumi dependencies:
@@ -625,18 +604,17 @@ Before deploying, let's understand what Pulumi will create:
    pulumi stack init ws
    ```
 
-4. Configure the stack to use your ESC environment:
-   ```bash
-   pulumi config env add honeycomb-pulumi-workshop/ws
-   ```
-
-   This creates/updates `Pulumi.ws.yaml` with:
+   The repository includes a `Pulumi.ws.yaml` file that pre-configures the stack to use your ESC environment:
    ```yaml
    environment:
      - honeycomb-pulumi-workshop/ws
    ```
 
-## Step 8: Preview the Infrastructure
+   When you run `pulumi stack init ws`, Pulumi automatically reads this configuration file and associates the stack with your `honeycomb-pulumi-workshop/ws` ESC environment. This means all secrets, AWS credentials, and configuration values are automatically available to your infrastructure code.
+
+   ::alert[**Stack Configuration**: The `Pulumi.ws.yaml` file is stack-specific configuration. Each stack (dev, staging, prod, ws) can reference different ESC environments, allowing you to manage multiple deployment environments with different credentials and settings.]{type="info"}
+
+## Step 7: Preview the Infrastructure
 
 Before deploying, preview what Pulumi will create:
 
@@ -651,7 +629,7 @@ Review the output. You should see Pulumi plans to create approximately:
 
 ::alert[**Preview Benefits**: Pulumi's preview shows exactly what will change before any resources are created. This is similar to `terraform plan` but with full programming language support.]{type="info"}
 
-## Step 9: Deploy the Infrastructure
+## Step 8: Deploy the Infrastructure
 
 Now deploy the complete stack:
 
@@ -678,7 +656,7 @@ pulumi up --yes
 
 ::alert[**Coffee Break Time**: The OpenSearch domain creation takes 10-15 minutes. This is a good time to grab coffee or review the architecture diagram!]{type="info"}
 
-## Step 10: Verify the Deployment
+## Step 9: Verify the Deployment
 
 Once the deployment completes, verify everything is working:
 
@@ -712,7 +690,7 @@ Once the deployment completes, verify everything is working:
    - "What is OpenTelemetry?"
    - You'll get a response but without RAG context
 
-## Step 11: Ingest Documentation for RAG
+## Step 10: Ingest Documentation for RAG
 
 The application uses RAG (Retrieval Augmented Generation) to provide contextually relevant answers. We need to populate the OpenSearch vector database with technical documentation.
 
@@ -804,7 +782,7 @@ If you prefer to run the ingestion script locally or need more control:
 
    This script only ingests OpenTelemetry documentation. Use Option A to include Honeycomb Pulumi docs.
 
-## Step 12: Test the Application
+## Step 11: Test the Application
 
 Now test the complete application with RAG enabled:
 
@@ -825,7 +803,7 @@ Now test the complete application with RAG enabled:
 
 ::alert[**Success!** You've deployed a production-ready GenAI application with RAG capabilities. The application uses AWS Bedrock for LLM responses and OpenSearch for semantic search over OpenTelemetry documentation.]{type="success"}
 
-## Step 13: Explore ECS and CloudWatch Logs
+## Step 12: Explore ECS and CloudWatch Logs
 
 AWS CLI commands require credentials from your Pulumi ESC environment. Use `pulumi env run` to execute commands with OIDC-based credentials.
 
