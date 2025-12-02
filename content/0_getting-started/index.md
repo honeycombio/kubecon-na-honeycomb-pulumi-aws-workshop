@@ -91,11 +91,6 @@ When you start the workshop, these resources are already provisioned:
 - Configured with workshop participant IAM role
 - Home folder: `/workshop/`
 
-✅ **EKS Cluster** (demo-aws-cluster)
-- EKS 1.32 with Auto Mode enabled
-- Pod Identity Add-on configured
-- CloudWatch logging enabled
-
 ## What You'll Deploy During the Workshop
 
 During the hands-on labs, you'll use Pulumi to provision:

@@ -29,3 +29,29 @@ By the end of this module, you'll have a fully functional GenAI chatbot running 
 - **CloudWatch Logs** for application logging
 
 ::alert[**Architecture Note**: The application uses AWS Bedrock (Claude 3.5 Sonnet) for AI responses and OpenSearch for semantic search over OpenTelemetry documentation. The entire stack is deployed as code using Pulumi TypeScript.]{type="info"}
+
+## Access Your Development Environment
+
+1. Open the **VS Code Server URL** provided by your workshop instructor (or from CloudFormation outputs if self-paced)
+
+2. Enter the **password** when prompted
+
+3. Verify you're in the `/workshop/ai-workshop` directory:
+   ```bash
+   pwd
+   # Should output: /workshop/ai-workshop
+   ```
+   
+4. Verify all required tools are installed:
+   ```bash
+   pulumi version
+   aws --version
+   node --version
+   docker --version
+   ```
+
+Expected output:
+- Pulumi: v3.x or later
+- AWS CLI: v2.x or later
+- Node.js: v18.x or later
+- Docker: 20.x or later

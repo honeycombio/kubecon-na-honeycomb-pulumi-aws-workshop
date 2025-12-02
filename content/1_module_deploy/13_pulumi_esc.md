@@ -13,7 +13,7 @@ Before creating the workshop environment, you need to configure AWS OIDC authent
 
 1. Download Cloud Formation Template :link[**here**]{href=":assetUrl{path="../static/infrastructure/pulumi-oidc.yaml"}" action=download} to automatically provision the identity provider and the IAM role
 
-2. Navigate to [CFN console](https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create) and choose the downloaded file. Click **Next**
+2. Navigate to [CFN console](https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create), select **Upload a template file**, and choose the downloaded file. Click **Next**
 
 3. Enter any stack name, for example `pulumi-oidc`, and enter your Pulumi organization name you created above in *PulumiOrgName* parameter. Other parameters are optional and you can leave it as is. Click **Next**
 
@@ -55,13 +55,13 @@ values:
       fn::open::aws-login:
         oidc:
           duration: 1h
-          roleArn: arn:aws:iam::123456789012:role/pulumi-workshop-oidc
+          roleArn: <pulumi-oidc-assigned-role>
           sessionName: pulumi-environments-session
   app:
     opensearchMasterPassword:
       fn::secret: YourStrongPassword123!
     opensearchMasterUser: admin
-    honeycombApiKey: honeycomb_api_key_here
+    honeycombApiKey: <honeycomb-api-key>
   pulumiConfig:
     opensearchMasterPassword: ${app.opensearchMasterPassword}
     opensearchMasterUser: ${app.opensearchMasterUser}
@@ -99,8 +99,8 @@ values:
    Expected output:
    ```json
    {
-       "UserId": "KEY_EXAMPLE:pulumi-environments-session",
-       "Account": "343319427887",
+       "UserId": "<GENERATED_KEY>:pulumi-environments-session",
+       "Account": "123456789012",
        "Arn": "arn:aws:sts::123456789012:assumed-role/pulumi-workshop-oidc/pulumi-environments-session"
    }
    ```

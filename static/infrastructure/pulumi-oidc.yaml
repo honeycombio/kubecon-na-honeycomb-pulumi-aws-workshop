@@ -127,6 +127,7 @@ Resources:
               - iam:AttachRolePolicy
               - iam:DetachRolePolicy
               - iam:ListAttachedRolePolicies
+              - iam:ListInstanceProfilesForRole
               - iam:PassRole
               - iam:TagRole
               - iam:UntagRole

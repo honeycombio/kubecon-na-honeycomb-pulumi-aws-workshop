@@ -49,29 +49,30 @@ weight: 31
 5. **Set the default organization**:
 
    ```bash
-   pulumi org set-default honeycomb-pulumi-ai-workshop
+   pulumi org set-default <your-organization>
    ```
 
    This sets your workshop organization as the default for all Pulumi operations, ensuring that new stacks and resources are created under the correct organization.
 
    Expected output:
    ```
-   Default organization set to honeycomb-pulumi-ai-workshop
+   Default organization set to <your-organization>
    ```
 
 6. **Verify your login**:
 
    ```bash
-   pulumi whoami -v
+   pulumi whoami -v && echo 'Default org:' && pulumi org get-default 
    ```
 
    Expected output:
    ```
    User: your-username
-   Organizations: honeycomb-pulumi-ai-workshop*
+   Organizations: <your-username>, <your_organization>
    Backend URL: https://api.pulumi.com
+   Token type: personal
+   Default org:
+   <your_organization>
    ```
-
-   The asterisk (*) indicates your default organization.
 
 ::alert[**Security Tip**: Pulumi Personal Access Tokens provide access to your infrastructure state and should be treated like passwords. Never commit them to version control or share them in public channels.]{type="warning"}
