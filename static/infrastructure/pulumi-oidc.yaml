@@ -26,7 +26,7 @@ Parameters:
   RoleName:
     Type: String
     Description: Name for the IAM role (optional - leave empty for auto-generated name)
-    Default: "honeycomb-pulumi-ai-workshop-oidc"
+    Default: "pulumi-workshop-oidc"
     AllowedPattern: '^$|^[\w+=,.@-]{1,64}$'
     ConstraintDescription: Must be empty or 1-64 characters containing alphanumeric characters and +=,.@-
 
