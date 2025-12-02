@@ -41,11 +41,13 @@ infrastructure:
       label: Pulumi OIDC provider
       parameters:
       - templateParameter: PulumiOrgName
-        defaultValue: honeycomb-pulumi-ai-workshop
+        defaultValue: workshop
       - templateParameter: PulumiProjectName
-        defaultValue: honeycomb-pulumi-ai-workshop
+        defaultValue: pulumi-idp
       - templateParameter: RoleName
-        defaultValue: honeycomb-pulumi-ai-workshop-oidc
+        defaultValue: pulumi-demo-org-deployments-oidc
+      participantVisibleStackOutputs:
+        - RoleArn
 # END Infrastructure
 
 # START Accounts
