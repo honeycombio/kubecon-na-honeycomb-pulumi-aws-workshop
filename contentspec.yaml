@@ -37,17 +37,6 @@ infrastructure:
         - URL
         - Password    
 
-    - templateLocation: static/infrastructure/pulumi-oidc.yaml
-      label: Pulumi OIDC provider
-      parameters:
-      - templateParameter: PulumiOrgName
-        defaultValue: workshop
-      - templateParameter: PulumiProjectName
-        defaultValue: pulumi-idp
-      - templateParameter: RoleName
-        defaultValue: pulumi-demo-org-deployments-oidc
-      participantVisibleStackOutputs:
-        - RoleArn
 # END Infrastructure
 
 # START Accounts
