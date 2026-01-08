@@ -134,6 +134,10 @@ Before concluding cleanup, verify:
 - [ ] No VPCs tagged with Project=otel-ai-chatbot
 - [ ] AWS billing dashboard shows expected cost reduction (check in 24-48 hours)
 
+### Step 9: Remove Cloud Formation Stacks from your own AWS accounts
+
+If you used Cloud Formation templates to provision VS Code with predeployed tools and Pulumi OIDC, navigate to Cloud Formation in AWS Management Console and explicitly remove stacks.
+
 ## Troubleshooting Cleanup Issues
 
 ### Pulumi Destroy Hangs on OpenSearch Deletion

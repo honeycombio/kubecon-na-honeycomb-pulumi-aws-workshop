@@ -9,6 +9,8 @@ weight: 21
 
 AWS Workshop Studio allows AWS field teams to run Workshops, GameDays, Bootcamps, Immersion Days, and other events that require hands-on access to AWS accounts.
 
+**Supported regions**: us-east-1, us-west-2.
+
 Follow the steps below to gain access to your Workshop Studio AWS account:
 
 1. Open AWS Workshop Studio at https://catalog.us-east-1.prod.workshops.aws/join/.
