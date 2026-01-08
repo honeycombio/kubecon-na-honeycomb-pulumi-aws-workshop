@@ -3,7 +3,7 @@ title: "Step 5: Use Pulumi Neo to Diagnose the Issue"
 weight: 65
 ---
 
-Now let's use **Pulumi Neo** (via Claude Code) to analyze the infrastructure and application based on our Honeycomb findings.
+Now let's use **Pulumi Neo** (via Kiro CLI) to analyze the infrastructure and application based on our Honeycomb findings.
 
 1. Provide Honeycomb findings to Pulumi Neo:
    ```
@@ -11,7 +11,7 @@ Now let's use **Pulumi Neo** (via Claude Code) to analyze the infrastructure and
    with these Honeycomb findings.
    ```
 
-   Claude Code will:
+   Kiro CLI will:
    - Connect to Pulumi MCP server
    - Invoke Pulumi Neo for stack analysis
    - Neo inspects infrastructure state (ECS, Bedrock config)

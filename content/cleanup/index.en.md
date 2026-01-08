@@ -27,6 +27,8 @@ To avoid ongoing AWS charges, it's important to clean up all resources created d
 
 ### Step 1: Destroy Pulumi Stack
 
+Fore more information see [Pulumi documentation](https://www.pulumi.com/docs/iac/get-started/azure/destroy-stack/).
+
 The application infrastructure you deployed via Pulumi can be destroyed in a single command:
 
 ```bash

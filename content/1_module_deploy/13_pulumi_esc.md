@@ -13,13 +13,13 @@ Before creating the workshop environment, you need to configure AWS OIDC authent
 
 1. Download Cloud Formation Template :link[**here**]{href=":assetUrl{path="../static/infrastructure/pulumi-oidc.yaml"}" action=download} to automatically provision the identity provider and the IAM role
 
-2. Navigate to [CFN console](https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create), select **Upload a template file**, and choose the downloaded file. Click **Next**
+2. Make sure you logged in to event's provided AWS Account. Navigate to [CFN console](https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create), select **Upload a template file**, and choose the downloaded file. Click **Next**
 
-3. Enter any stack name, for example `pulumi-oidc`, and enter your Pulumi organization name you created above in *PulumiOrgName* parameter. Other parameters are optional and you can leave it as is. Click **Next**
+3. Enter any stack name, for example `pulumi-oidc`, and enter your Pulumi organization name you created earlier in *PulumiOrgName* parameter. Other parameters are optional and you can leave it as is. Click **Next**
 
- ![Pulumi OIDC CFN Parameters](/static/images/pulumi-oidc-setup-cfn.png)
+:image[Pulumi OIDC CFN Parameters]{src="/static/images/pulumi/pulumi-oidc-setup-cfn.png" width=600}
 
-4. Check *I acknowledge that AWS CloudFormation might create IAM resources with custom names* box at ther bottom of the page, click **Next** and then **Submit** on the next page. 
+4. Scroll down and check *I acknowledge that AWS CloudFormation might create IAM resources with custom names* box at ther bottom of the page, click **Next** and then **Submit** on the next page. 
 
 5. It takes a minute to provision. Navigate to **Outputs** and copy **RoleArn**. You will need it for next step.
 
@@ -32,7 +32,7 @@ Now create the workshop-specific environment that imports the AWS credentials:
 
    You'll see the Environments page. Initially, it will be empty:
 
-   ![Environments Page](/static/images/environments-page.png)
+   :image[Environments Page]{src="/static/images/pulumi/environments-page.png" width=750}
 
 2. Click **Create Environment**
 
@@ -40,13 +40,13 @@ Now create the workshop-specific environment that imports the AWS credentials:
    - **Project name**: `honeycomb-pulumi-workshop` (creates a new project for organizing your environments)
    - **Environment name**: `ws` (short for "workshop")
 
-   ![Create Environment Form](/static/images/create-environment-form.png)
+   :image[Create Environment Form]{src="/static/images/pulumi/create-environment-form.png" width=750}
 
    ::alert[**Environment Naming**: The full environment name will be `honeycomb-pulumi-workshop/ws`. This format follows the pattern `project-name/environment-name`, allowing you to organize multiple environments under the same project.]{type="info"}
 
 3. Click **Create Environment** to create the environment
 
-4. Add the following YAML configuration. Replace `roleArn` with the RoleArn output value from OIDC setup. Replace `honeycombApiKey` value with your API token created at Honeycomb setup step.
+4. Add the following YAML configuration. Replace `roleArn` with the RoleArn output value from OIDC setup. Replace `honeycombApiKey` value with your Ingest API token created at Honeycomb setup step.
 
 ```yaml
 values:
@@ -76,13 +76,13 @@ values:
 
    After entering the configuration, the Monaco editor will show the YAML on the left side and the resolved preview on the right side:
 
-   ![Environment Configuration Saved](/static/images/environment-configuration-saved.png)
+   :image[Environment Configuration Saved]{src="/static/images/pulumi/environment-configuration-saved.png" width=750}
 
    ::alert[**Security Note**: The `fn::secret` encryption will happen automatically when you save. Your secrets will be encrypted and stored securely by Pulumi ESC.]{type="info"}
 
 5. Click **Save**
 
-6. **Test your ESC environment** from the terminal:
+6. **Test your ESC environment** from the VS Code terminal:
 
    ```bash
    pulumi env get honeycomb-pulumi-workshop/ws

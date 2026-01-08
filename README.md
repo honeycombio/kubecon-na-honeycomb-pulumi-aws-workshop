@@ -47,7 +47,7 @@ This workshop is perfect for:
 
 - **Pulumi** - Infrastructure as code with AI-powered assistance
 - **Honeycomb** - Observability platform for querying telemetry data
-- **Claude Code** - AI coding assistant with infrastructure access
+- **VS Code with Kiro CLI** - AI coding assistant with infrastructure access
 - **AWS** - EKS (Kubernetes), EC2, and supporting services
 - **OpenTelemetry** - Industry-standard instrumentation framework
 

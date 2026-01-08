@@ -5,7 +5,7 @@ weight: 0
 
 Welcome to our AWS workshop
 
-with ![Honeycomb Logo](/static/images/honeycomb/honeycomb-transparent-bg.png)     and      ![Pulumi Logo](/static/images/pulumi/pulumi-transparent-bg.png)
+with      :image[Honeycomb Logo]{src="/static/images/honeycomb/honeycomb-transparent-bg.png" width=200}      and      :image[Pulumi Logo]{src="/static/images/pulumi/pulumi-transparent-bg.png" width=200}
 
 ## Overview
 

@@ -16,7 +16,7 @@ Congratulations! You've successfully:
 
 ## What's Next?
 
-In **Module 4**, you'll use **Amazon Q with MCP servers** to:
+In **Module 4**, you'll use **Amazon Kiro CLI with MCP servers** to:
 1. Query Honeycomb data directly from your IDE
 2. Ask an AI agent to diagnose the performance issue
 3. Use **Pulumi Neo** to generate infrastructure code changes

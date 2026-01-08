@@ -6,7 +6,7 @@ weight: 69
 Congratulations! You've successfully:
 
 * ✅ Configured MCP servers for Honeycomb and Pulumi (OAuth-based, no API keys!)
-* ✅ Connected Claude Code to your observability and infrastructure data
+* ✅ Connected Kiro CLI to your observability and infrastructure data
 * ✅ Used natural language to query Honeycomb traces
 * ✅ Asked AI agent to diagnose performance bottleneck (LLM latency, not infrastructure)
 * ✅ Passed diagnosis to Pulumi Neo for comprehensive analysis

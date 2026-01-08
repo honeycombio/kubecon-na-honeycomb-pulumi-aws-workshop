@@ -12,13 +12,13 @@ weight: 31
 
    After signing up, you'll see your organization in the top-left dropdown. You can switch between your organization account and individual account:
 
-   ![Organization Dropdown](/static/images/organization-dropdown.png)
+   :image[Organization Dropdown]{src="/static/images/pulumi/organization-dropdown.png" width=600}
 
  2. **Create a workshop-specific organization**: Click on **Create organization** from the dropdown. Enter your organization name (e.g., `honeycomb-pulumi-ai-workshop`), agree to the terms of service, and click **Create organization**:
 
-   ::alert[**Organization Naming**: Choose a descriptive name for your workshop organization. The name becomes part of your Pulumi Cloud URL (e.g., `https://app.pulumi.com/honeycomb-pulumi-ai-workshop`). Organization names must be unique across Pulumi Cloud.]{type="info"}
+   ::alert[**Organization Naming**: Choose a descriptive name for your workshop organization. The name becomes part of your Pulumi Cloud URL (e.g., `https://app.pulumi.com/honeycomb-pulumi-ai-<initials>-workshop`). Organization names must be unique across Pulumi Cloud.]{type="info"}
 
-   ![Create Organization Form](/static/images/create-organization-form.png)
+   :image[Create Organization Form]{src="/static/images/pulumi/create-organization-form.png" width=600}
 
 3. **Create a Personal Access Token**:
 

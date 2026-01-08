@@ -9,8 +9,6 @@ Before deploying, let's understand what Pulumi will create:
 
    The workshop repository contains a well-organized GenAI application with the following structure:
 
-   ![VS Code Project Structure](/static/images/vscode-project-structure.png)
-
    **Key directories and their purposes:**
 
    - **`client/`** - React frontend application
@@ -46,7 +44,7 @@ Before deploying, let's understand what Pulumi will create:
 
    **Open the Pulumi infrastructure code** by clicking on the `pulumi` folder in the Explorer sidebar, then clicking on `index.ts`:
 
-   ![Pulumi index.ts File](/static/images/vscode-pulumi-index-ts.png)
+   :image[Pulumi index.ts File]{src="/static/images/pulumi/vscode-pulumi-index-ts.png" width=750}
 
    This file contains the complete infrastructure definition, including ECR repositories, VPC configuration, ECS cluster, OpenSearch domain, and Application Load Balancer setup.
 

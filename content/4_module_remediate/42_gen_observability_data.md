@@ -3,10 +3,10 @@ title: "Step 2: Generate Fresh Observability Data"
 weight: 62
 ---
 
-Before we can use Claude Code to query Honeycomb, we need to generate some recent telemetry data by using the AI Chatbot application.
+Before we can use Kiro CLI to query Honeycomb, we need to generate some recent telemetry data by using the AI Chatbot application.
 
 **Why generate fresh data?**
-- Claude Code will query data from the "last hour" in the next steps
+- Kiro CLI will query data from the "last hour" in the next steps
 - Fresh data ensures we have meaningful metrics to analyze
 - Multiple requests will generate varied latency patterns for analysis
 
@@ -40,4 +40,4 @@ Before we can use Claude Code to query Honeycomb, we need to generate some recen
 
 4. **Wait 1-2 minutes** for traces to propagate to Honeycomb before proceeding to the next step.
 
-::alert[**Pro Tip**: Vary your questions to generate different response patterns. This will give you more interesting data to analyze when querying with Claude Code in the next steps!]{type="info"}
+::alert[**Pro Tip**: Vary your questions to generate different response patterns. This will give you more interesting data to analyze when querying with Kiro CLI in the next steps!]{type="info"}

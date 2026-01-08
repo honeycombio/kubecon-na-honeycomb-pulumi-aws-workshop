@@ -14,18 +14,38 @@ weight: 32
 
    Once logged in to Honeycomb:
    - Navigate to your environment settings
-   - Go to **Team Settings** → **API Keys** (or directly to `https://ui.honeycomb.io/account`)
-   - Click **Create API Key** in the Ingest Keys section
-   - **Key Name**: `workshop-otel` or `kubecon-workshop`
-   - **Key Type**: Ensure you're creating an **Ingest Key** (not a Configuration Key)
-   - **Permissions**: Enable **"Can create datasets"** permission
-     - This allows the application to automatically create the `otel-ai-chatbot` dataset when sending telemetry
-   - Click **Create Key**
+
+   :image[Environment Settings]{src="/static/images/honeycomb/api_keys.png" width=750}
+
+   - Click **Create Ingest API Key** 
+      - **Key Name**: `workshop-otel`
+      - Leave **"Can create services/datasets"** enabled. This allows the application to automatically create the `otel-ai-chatbot` dataset when sending telemetry
+      - Click **Create**
+
+   :image[Ingest API Key]{src="/static/images/honeycomb/create_ingest_key.png" width=600}
+  
    - **Important**: Copy the API key value immediately - you won't be able to see it again!
 
    Example API key format: `hc[alphanumeric string]`
 
-3. **Note your Environment name**:
+2. Create an **Managenent API Key** for MCP server. For more documentation check [here](https://docs.honeycomb.io/integrations/mcp/configuration-guide/#setting-up-an-api-key).
+
+   - Navigate to your **Account > Team Settings > API Keys**
+
+   :image[Ingest API Key]{src="/static/images/honeycomb/account_team_settings.png" width=750}
+
+   - Click **Create Management API Key** 
+      - **Key Name**: `mcp-integration`
+      - Choose 
+         - **Environments** scope > **Read-only** 
+         - **Model Context Protocol** scope > **Read and write** 
+      - Click **Create**
+ 
+   :image[Ingest API Key]{src="/static/images/honeycomb/create_management_key.png" width=600}
+
+   - **Important**: Copy the Key Secret value immediately and click **I've copied key secret!**. Copy **Key ID** as well and save it as the pair.
+
+4. Note your **Environment name**:
    - Look at the top-left of the Honeycomb UI
    - The environment name is usually shown as part of your team name
    - Default environment is often `production` or your team slug

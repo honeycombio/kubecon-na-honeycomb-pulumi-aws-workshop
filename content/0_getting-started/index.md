@@ -9,14 +9,14 @@ In this workshop, you'll deploy and operate a **GenAI chatbot application** that
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Workshop Participants                         │
-│                  (VS Code Server on EC2)                         │
-│                                                                  │
-│  ┌────────────────┐  ┌──────────────────┐  ┌────────────────┐ │
-│  │ Amazon Q CLI   │  │  Pulumi CLI      │  │  kubectl       │ │
-│  │ + MCP Servers  │  │  + Pulumi ESC    │  │  + AWS CLI     │ │
-│  │                │  │  + Pulumi Neo    │  │                │ │
-│  └────────────────┘  └──────────────────┘  └────────────────┘ │
+│                    Workshop Participants                        │
+│                  (VS Code Server on EC2)                        │
+│                                                                 │
+│  ┌─────────────────┐   ┌──────────────────┐  ┌────────────────┐ │
+│  │ Amazon Kiro CLI │   │    Pulumi CLI    │  │    kubectl     │ │
+│  │ + MCP Servers   │   │  + Pulumi ESC    │  │  + AWS CLI     │ │
+│  │                 │   │  + Pulumi Neo    │  │                │ │
+│  └─────────────────┘   └──────────────────┘  └────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
                               │
                     ┌─────────┴─────────┐
@@ -32,31 +32,31 @@ In this workshop, you'll deploy and operate a **GenAI chatbot application** that
                     │
                     │ OpenTelemetry Data
                     │
-        ┌───────────▼────────────────────────────────────┐
-        │          AWS Account (Your Stack)               │
-        │                                                 │
+        ┌───────────▼───────────────────────────────────┐
+        │          AWS Account (Your Stack)             │
+        │                                               │
         │  ┌──────────────┐       ┌──────────────────┐  │
         │  │ Application  │       │  Amazon          │  │
         │  │ Load         │◄──────┤  OpenSearch      │  │
         │  │ Balancer     │       │  (Vector Store)  │  │
         │  └──────┬───────┘       └──────────────────┘  │
-        │         │                                       │
+        │         │                                     │
         │  ┌──────▼───────────────────────────────────┐ │
-        │  │  ECS Fargate (OTel AI Chatbot)          │ │
+        │  │  ECS Fargate (OTel AI Chatbot)           │ │
         │  │                                          │ │
-        │  │  - React Frontend + Express API         │ │
-        │  │  - OpenTelemetry Instrumentation        │ │
-        │  │  - AWS Bedrock (Claude 3.5 Sonnet)     │ │
-        │  │  - Exports traces to Honeycomb          │ │
+        │  │  - React Frontend + Express API          │ │
+        │  │  - OpenTelemetry Instrumentation         │ │
+        │  │  - AWS Bedrock (Claude 3.5 Sonnet)       │ │
+        │  │  - Exports traces to Honeycomb           │ │
         │  └──────────────────────────────────────────┘ │
-        └─────────────────────────────────────────────────┘
+        └───────────────────────────────────────────────┘
 ```
 
 ### Key Components
 
 **Development Environment:**
 - **VS Code Server on EC2**: Your complete development environment with pre-installed tools
-- **Amazon Q CLI**: AI assistant with MCP (Model Context Protocol) server support
+- **Amazon Kiro CLI**: AI assistant with MCP (Model Context Protocol) server support
 - **Pulumi CLI**: Infrastructure as Code tool with Pulumi ESC for secrets management
 - **Pulumi Neo**: AI agent for generating infrastructure code changes
 
@@ -69,7 +69,7 @@ In this workshop, you'll deploy and operate a **GenAI chatbot application** that
 
 **Observability & Management:**
 - **Honeycomb**: Observability platform for collecting and analyzing OpenTelemetry data
-- **Honeycomb MCP Server**: Enables Amazon Q to query observability data
+- **Honeycomb MCP Server**: Enables Amazon Kiro CLI to query observability data
 - **Pulumi Cloud**: Manages infrastructure state and provides access to Pulumi Neo
 - **Pulumi ESC**: Manages secrets and configuration securely
 
@@ -87,7 +87,7 @@ The workshop infrastructure (VS Code Server and baseline AWS resources) will be 
 When you start the workshop, these resources are already provisioned:
 
 ✅ **VS Code Server on EC2** with CloudFront distribution for secure access
-- Pre-installed: Pulumi CLI, AWS CLI, kubectl, eksctl, helm, Amazon Q CLI
+- Pre-installed: Pulumi CLI, AWS CLI, kubectl, eksctl, helm, Amazon Kiro CLI
 - Configured with workshop participant IAM role
 - Home folder: `/workshop/`
 
@@ -121,11 +121,11 @@ Throughout the workshop, you'll set up and configure:
 
 🔧 **OpenTelemetry Instrumentation**: Add automatic and manual instrumentation to the Node.js application
 
-🔧 **Honeycomb MCP Server**: Enable Amazon Q to query your observability data
+🔧 **Honeycomb MCP Server**: Enable Amazon Kiro CLI to query your observability data
 
-🔧 **Pulumi MCP Server**: Enable Amazon Q to interact with Pulumi infrastructure
+🔧 **Pulumi MCP Server**: Enable Amazon Kiro CLI to interact with Pulumi infrastructure
 
-🔧 **AI-Powered Remediation Workflow**: Use Amazon Q + Pulumi Neo to diagnose and fix infrastructure issues
+🔧 **AI-Powered Remediation Workflow**: Use Amazon Kiro CLI + Pulumi Neo to diagnose and fix infrastructure issues
 
 ::alert[**Cost Management**: If you are running this workshop on your own AWS account, remember to delete all resources by following the [Clean Up Resources](/cleanup.html) section to avoid unnecessary charges. The workshop uses cost-effective instance types with estimated costs of ~$2-3 for the 2-hour session. The application stack (ECS + OpenSearch + ALB) costs approximately $100-110/month if left running.]{type="warning"}
 

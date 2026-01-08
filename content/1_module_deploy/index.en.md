@@ -55,3 +55,19 @@ Expected output:
 - AWS CLI: v2.x or later
 - Node.js: v18.x or later
 - Docker: 20.x or later
+
+5. Explore your workspace
+
+::alert[**Tip**: Double click on in main editor area to create an empty file to temporary store all necessary keys. The following values you will need to collect:]{type="info"}
+   ```bash
+pulumi org:  
+pulumi token: 
+
+honeycomb env: 
+honeycomb ingest key: 
+honeycomb management key
+    key secret:  
+    key_id: 
+   ```
+
+:image[VSCode project]{src="/static/images/pulumi/vscode-project-structure.png" width=750}

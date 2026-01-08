@@ -701,27 +701,18 @@ Resources:
                 - !Sub systemctl status code-server@${VSCodeUser}
 # Install optional packages here - any of these blocks can be deleted if that software is not required for the workshop
 # Install Workshop specific packages here
-          - name: InstallQCommandLine
+          - name: InstallKiroCLI
             action: aws:runShellScript
             inputs:
               timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                - curl --proto '=https' --tlsv1.2 -sSf "https://desktop-release.codewhisperer.us-east-1.amazonaws.com/latest/q-$(uname -m)-linux.zip" -o /tmp/q.zip
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /tmp/q.zip
-                - unzip -q -d /tmp /tmp/q.zip
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /tmp/q
-                - chmod +x /tmp/q/install.sh
-                - !Sub sudo -u ${VSCodeUser} /tmp/q/install.sh --no-confirm
-                - rm -rf /tmp/q
-                - echo "Amazon Q Command line installed"
-          - name: InstallClaudeCode
-            action: aws:runShellScript
-            inputs:
-              timeoutSeconds: 300
-              runCommand:
-                - '#!/bin/bash'
-                - curl -fsSL https://claude.ai/install.sh | bash
+                - set -euo pipefail
+                - curl -fsSL https://cli.kiro.dev/install -o /tmp/install-kiro-cli.sh
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /tmp/install-kiro-cli.sh
+                - !Sub sudo -u ${VSCodeUser} bash /tmp/install-kiro-cli.sh 2>&1
+                - echo "Kiro CLI installed. Checking configuration"
+                - !Sub sudo -i -u ${VSCodeUser} kiro-cli --version
           - name: InstallDockerDnf
             action: aws:runShellScript
             precondition:
@@ -1005,6 +996,10 @@ Resources:
                   - ecs:RegisterTaskDefinition
                   - ecs:ListTaskDefinitions
                   - ecs:DescribeTaskDefinition
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                  - ecr:PutImage
                 Resource: '*'
 
   VSCodeInstanceProfile:

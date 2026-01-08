@@ -3,16 +3,16 @@ title: "Step 4: Advanced - Use MCP to Analyze Instrumentation Quality (Optional)
 weight: 64
 ---
 
-One powerful capability of Honeycomb MCP is analyzing instrumentation patterns across your services. Let's use Claude Code to examine our instrumentation quality.
+One powerful capability of Honeycomb MCP is analyzing instrumentation patterns across your services. Let's use Kiro CLI to examine our instrumentation quality.
 
-**Ask Claude Code to analyze instrumentation:**
+**Ask Kiro CLI to analyze instrumentation:**
 
 ```
 Query Honeycomb to show me what attributes are being captured on the gen_ai.bedrock.chat spans.
 Are we following OpenTelemetry GenAI semantic conventions v1.0?
 ```
 
-Claude Code will:
+Kiro CLI will:
 1. Query for recent `gen_ai.bedrock.chat` spans
 2. List all attributes being captured
 3. Compare against OpenTelemetry v1.0 specifications
@@ -44,7 +44,7 @@ Based on the Honeycomb data, can you suggest improvements to our llmTracing.js
 to add the missing recommended attributes like temperature and max_tokens?
 ```
 
-Claude Code will:
+Kiro CLI will:
 1. Review current `llmTracing.js` implementation
 2. Identify where to add missing attributes
 3. Propose code changes with proper v1.0 naming

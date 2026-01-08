@@ -3,7 +3,7 @@ title: "Module 4: AI-Powered Remediation"
 weight: 60
 ---
 
-In this module, you'll experience the future of infrastructure management: **AI agents that reason over observability data and propose infrastructure fixes**. You'll configure Claude Code (or your preferred AI IDE/CLI) with MCP (Model Context Protocol) servers for Honeycomb and Pulumi, then use Pulumi Neo to automatically generate infrastructure code changes based on the performance issues you discovered in Module 3.
+In this module, you'll experience the future of infrastructure management: **AI agents that reason over observability data and propose infrastructure fixes**. You'll configure your IDE with MCP (Model Context Protocol) servers for Honeycomb and Pulumi, then use Pulumi Neo to automatically generate infrastructure code changes based on the performance issues you discovered in Module 3.
 
 ## Module Overview
 
@@ -11,9 +11,9 @@ In this module, you'll experience the future of infrastructure management: **AI 
 
 **Objectives:**
 - Understand MCP (Model Context Protocol) and its role in agentic workflows
-- Configure Honeycomb MCP server in Claude Code
-- Configure Pulumi MCP server in Claude Code
-- Use Claude Code to query observability data from Honeycomb
+- Configure Honeycomb MCP server in Kiro CLI
+- Configure Pulumi MCP server in Kiro CLI
+- Use Kiro CLI to query observability data from Honeycomb
 - Ask AI agent to diagnose the performance bottleneck
 - Use Pulumi Neo to generate infrastructure code fix
 - Review and apply the fix (human-in-the-loop)
@@ -29,8 +29,8 @@ In this module, you'll experience the future of infrastructure management: **AI 
 - Access contextual information in real-time
 
 **In this workshop:**
-- **Honeycomb MCP Server**: Lets Claude Code query your observability data
-- **Pulumi MCP Server**: Lets Claude Code inspect infrastructure and invoke Pulumi Neo
-- **Claude Code**: AI assistant that understands MCP protocol (you can also use other AI IDEs like Cursor, Windsurf, or AI CLIs like Zed)
+- **Honeycomb MCP Server**: Lets Kiro CLI query your observability data
+- **Pulumi MCP Server**: Lets Kiro CLI inspect infrastructure and invoke Pulumi Neo
+- **Kiro CLI**: AI assistant that understands MCP protocol (you can also use other AI IDEs like Cursor, Windsurf, or AI CLIs like Zed)
 
 ::alert[**Why This Matters**: With MCP, your AI assistant can go beyond simple chat responses. It can actively reason over live data and propose concrete actions. This is the foundation of **agentic workflows** where AI systems can autonomously (with human oversight) operate infrastructure.]{type="info"}

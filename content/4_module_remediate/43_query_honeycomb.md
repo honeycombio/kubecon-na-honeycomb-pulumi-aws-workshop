@@ -3,15 +3,15 @@ title: "Step 3: Query Honeycomb Data"
 weight: 63
 ---
 
-Now let's use Claude Code to query the observability data we collected in Module 3.
+Now let's use Kiro CLI to query the observability data we collected in Module 3.
 
-1. Ask Claude Code about recent application performance:
+1. Ask Kiro CLI about recent application performance:
    ```
    Using the Honeycomb MCP server, show me the P95 latency for successful chat requests
    (status code 200) in the last hour for the otel-ai-chatbot-backend dataset
    ```
 
-   Claude Code will:
+   Kiro CLI will:
    - Connect to Honeycomb MCP server
    - Construct appropriate Honeycomb query (filtering for HTTP 200 responses)
    - Execute query and return results
@@ -130,4 +130,4 @@ Now let's use Claude Code to query the observability data we collected in Module
    by slow LLM response times.
    ```
 
-::alert[**Natural Language Queries**: Notice you don't need to learn Honeycomb's query syntax. Claude Code translates your natural language request into proper Honeycomb queries using the MCP server.]{type="success"}
+::alert[**Natural Language Queries**: Notice you don't need to learn Honeycomb's query syntax. Kiro CLI translates your natural language request into proper Honeycomb queries using the MCP server.]{type="success"}
