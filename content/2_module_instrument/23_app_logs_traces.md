@@ -101,9 +101,9 @@ Now let's generate some requests to create traces.
    You'll see the trace waterfall showing:
    ```
    POST /api/chat (root span)
-   ├─ llm.bedrock.call (~1.8s)
+   ├─ gen_ai.bedrock.chat (~1.8s)
    │  └─ AWS Bedrock InvokeModel (~1.7s)
-   ├─ db.opensearch.query (~0.3s)
+   ├─ db.vector.search (~0.3s)
    │  └─ HTTPS POST OpenSearch (~0.2s)
    └─ serialization (~0.05s)
    ```

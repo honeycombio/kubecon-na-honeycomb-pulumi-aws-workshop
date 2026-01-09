@@ -68,21 +68,24 @@ Before deploying, let's understand what Pulumi will create:
 
    **Automated Docker Image Build and Push:**
    ```typescript
-   const image = new docker.Image(`${appName}-image`, {
-       imageName: pulumi.interpolate`${ecrRepository.repositoryUrl}:${environment}`,
-       build: {
-           context: "../", // Build from the parent directory
-           dockerfile: "../Dockerfile",
-           platform: "linux/amd64",
-           args: {
-               NODE_ENV: "production",
-           },
+   const image = new dockerBuild.Image(`${appName}-image`, {
+       tags: [pulumi.interpolate`${ecrRepository.repositoryUrl}:${environment}`],
+       push: true,
+       context: {
+           location: "../",
        },
-       registry: {
-           server: ecrRepository.repositoryUrl,
+       dockerfile: {
+           location: "../Dockerfile",
+       },
+       platforms: ["linux/arm64"],
+       buildArgs: {
+           NODE_ENV: "production",
+       },
+       registries: [{
+           address: ecrRepository.repositoryUrl,
            username: authToken.userName,
            password: authToken.password,
-       },
+       }],
    }, {dependsOn: [ecrRepository]});
    ```
 

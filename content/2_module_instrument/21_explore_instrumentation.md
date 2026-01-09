@@ -90,7 +90,7 @@ The application uses `getNodeAutoInstrumentations()` to automatically instrument
 POST /api/chat (Express auto-instrumentation)
 ├─ gen_ai.bedrock.chat (Custom GenAI instrumentation)
 │  └─ AWS Bedrock InvokeModel (AWS SDK auto-instrumentation)
-├─ db.vector.search (Custom instrumentation - future enhancement)
+├─ db.vector.search (Custom RAG instrumentation)
 │  └─ HTTPS POST OpenSearch (HTTP auto-instrumentation)
 └─ Response
 ```
