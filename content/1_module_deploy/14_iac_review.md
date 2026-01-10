@@ -186,6 +186,7 @@ Before deploying, let's understand what Pulumi will create:
    export const albUrl = pulumi.interpolate`http://${alb.dnsName}`;
    export const openSearchEndpoint = openSearchDomain.endpoint;
    export const ecsClusterName = cluster.name;
+   export const ecsTaskDefinitionArn = taskDefinition.arn;
    export const secretsManagerSecretArn = secretsManagerSecret.arn;
    ```
 

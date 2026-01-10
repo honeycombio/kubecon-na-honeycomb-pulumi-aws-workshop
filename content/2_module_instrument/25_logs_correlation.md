@@ -8,10 +8,15 @@ One powerful feature of OpenTelemetry is **log-trace correlation**. Winston logs
 1. **View logs with trace context**:
    ```bash
    cd /workshop/ai-workshop/pulumi
+   # Find the log group name (has Pulumi-generated suffix)
+   LOG_GROUP=$(pulumi env run honeycomb-pulumi-workshop/ws -i -- \
+     aws logs describe-log-groups --log-group-name-prefix otel-ai-chatbot-logs \
+     --query 'logGroups[0].logGroupName' --output text)
+
    pulumi env run honeycomb-pulumi-workshop/ws -i -- aws logs tail \
-     /aws/ecs/otel-ai-chatbot-logs \
+     $LOG_GROUP \
      --since 5m \
-     --filter-pattern "POST /api/chat"
+     --filter-pattern "api chat"
    ```
 
    You'll see logs like:

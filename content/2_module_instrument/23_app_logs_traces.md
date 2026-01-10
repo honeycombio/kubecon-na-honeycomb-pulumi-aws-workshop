@@ -8,9 +8,14 @@ weight: 43
 1. **View recent CloudWatch logs**:
    ```bash
    cd /workshop/ai-workshop/pulumi
+   # Find the log group name (has Pulumi-generated suffix)
+   LOG_GROUP=$(pulumi env run honeycomb-pulumi-workshop/ws -i -- \
+     aws logs describe-log-groups --log-group-name-prefix otel-ai-chatbot-logs \
+     --query 'logGroups[0].logGroupName' --output text)
+
    pulumi env run honeycomb-pulumi-workshop/ws -i -- aws logs tail \
-     /aws/ecs/otel-ai-chatbot-logs \
-     --since 10m \
+     $LOG_GROUP \
+     --since 1h \
      --filter-pattern "OpenTelemetry"
    ```
 
@@ -28,8 +33,8 @@ weight: 43
 2. **If logs don't show initialization**, check for errors:
    ```bash
    pulumi env run honeycomb-pulumi-workshop/ws -i -- aws logs tail \
-     /aws/ecs/otel-ai-chatbot-logs \
-     --since 10m \
+     $LOG_GROUP \
+     --since 1h \
      --filter-pattern "error"
    ```
 

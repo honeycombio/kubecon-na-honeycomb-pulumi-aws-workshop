@@ -7,8 +7,7 @@ Now let's use **Pulumi Neo** (via Kiro CLI) to analyze the infrastructure and ap
 
 1. Provide Honeycomb findings to Pulumi Neo:
    ```
-   Using the Pulumi MCP server, ask Pulumi Neo to analyze stack "otel-ai-chatbot-infra/ws"
-   with these Honeycomb findings.
+   Using the Pulumi MCP server, ask Pulumi Neo to analyze stack "otel-ai-chatbot-infra/ws" with these Honeycomb findings.
    ```
 
    Kiro CLI will:
@@ -20,121 +19,47 @@ Now let's use **Pulumi Neo** (via Kiro CLI) to analyze the infrastructure and ap
    - Neo provides root cause analysis
 
    Expected response (Neo's comprehensive analysis):
-   ~~~
-   ⏺ I'll use Pulumi Neo to analyze the stack with the Honeycomb findings about the high latency we discovered.
 
-    ⏺ pulumi - neo-bridge (MCP)(query: "Analyze the infrastructure for the otel-ai-chatbot application and review it based on these observability
-    findings from Honeycomb:\n\n**Performance Analysis:**\n- P95 latency for successful chat requests: 17.5 seconds\n-
-    Slowest operation: \"chat anthropic.claude-3-5-sonnet-20240620-v1:0\" with P95 of 19.6 seconds (avg 17 seconds)\n- POST
-    endpoint P95 latency: 19.2 seconds\n- Only 7 LLM chat requests in the past hour\n- BedrockRuntime.InvokeModel: 186ms
-    average\n- GET requests are fast: 2.6ms P95\n\n**Key Observations:**\n- The Claude 3.5 Sonnet LLM inference on AWS
-    Bedrock is the primary bottleneck\n- Very high latency (~20 seconds) for chat operations\n- Low request volume (7 chat
-    requests/hour)\n\nPlease analyze the current infrastructure configuration and suggest optimizations to:\n1. Reduce LLM
-    inference latency\n2. Improve overall application performance\n3. Optimize for better user experience given these
-    latency patterns\n4. Consider infrastructure changes like compute resources, caching, or architectural improvements",
-    stack: {"name":"ws","project":"otel-ai-chatbot-infra"})
-    ⎿ Neo task launched at: https://app.pulumi.com/<your-org>/neo/tasks/<task-id>
-    ⎿ ⏳ Neo is still processing your request. This can take some time for complex infrastructure tasks.
-    
-         To check for updates, call this tool again with the same taskId (no need to provide a query).
-    
-    ⏺ Let me check for updates on the Neo analysis:
-    
-    ⏺ pulumi - neo-bridge (MCP)(taskId: "ccd742a6-0fd6-4d03-9751-359525af019c")
-    ⎿ Polling task ccd742a6-0fd6-4d03-9751-359525af019c
-    ⎿ I'll analyze the infrastructure for the otel-ai-chatbot application and provide recommendations based on the observability findings. Let m
-    e start by gathering information about the current infrastructure setup.
-    
-    
-    ⏺ pulumi - neo-bridge (MCP)(taskId: "ccd742a6-0fd6-4d03-9751-359525af019c")
-    ⎿ Polling task ccd742a6-0fd6-4d03-9751-359525af019c
-    ⎿ Now let me retrieve the source code to examine the infrastructure configuration in detail:
-    
-    ⏺ pulumi - neo-bridge (MCP)(taskId: "ccd742a6-0fd6-4d03-9751-359525af019c")
-    ⎿ Polling task ccd742a6-0fd6-4d03-9751-359525af019c
-    ⎿ Now let me check the application configuration and RAG service to understand the full architecture:
-    
-    ⏺ pulumi - neo-bridge (MCP)(taskId: "ccd742a6-0fd6-4d03-9751-359525af019c")
-    ⎿ Polling task ccd742a6-0fd6-4d03-9751-359525af019c
-    ⎿ Now let me check the package.json to understand the dependencies and check if there's any caching mechanism:
-    
-    ⏺ pulumi - neo-bridge (MCP)(taskId: "ccd742a6-0fd6-4d03-9751-359525af019c")
-    ⎿ Polling task ccd742a6-0fd6-4d03-9751-359525af019c
-    ⎿ ⏳ Neo is still processing your request. This can take some time for complex infrastructure tasks.
-    
-         To check for updates, call this tool again with the same taskId (no need to provide a query).
-    
-    ⏺ pulumi - neo-bridge (MCP)(taskId: "ccd742a6-0fd6-4d03-9751-359525af019c")
-    ⎿ Polling task ccd742a6-0fd6-4d03-9751-359525af019c
-    ⎿ ⏳ Neo is still processing your request. This can take some time for complex infrastructure tasks.
-    
-         To check for updates, call this tool again with the same taskId (no need to provide a query).
-    
-    ⏺ pulumi - neo-bridge (MCP)(taskId: "ccd742a6-0fd6-4d03-9751-359525af019c")
-    ⎿ Polling task ccd742a6-0fd6-4d03-9751-359525af019c
-    ⎿ ⏳ Neo is still processing your request. This can take some time for complex infrastructure tasks.
-    
-         To check for updates, call this tool again with the same taskId (no need to provide a query).
-    
-    ⏺ pulumi - neo-bridge (MCP)(taskId: "ccd742a6-0fd6-4d03-9751-359525af019c")
-    ⎿ Polling task ccd742a6-0fd6-4d03-9751-359525af019c
-    ⎿ Based on my analysis of the infrastructure and observability data, I can now provide you with a comprehensive analysis and recommendations
-    . Let me create a detailed report:
-    … +261 lines (ctrl+o to expand)
-    
-    
-    ⏺ Pulumi Neo Analysis Complete!
-    
-    Neo has finished analyzing the otel-ai-chatbot-infra/ws stack with the Honeycomb observability findings. Here are the key insights:
-    
-    🔍 Root Cause Analysis
-    
-    Current Infrastructure:
-    - ECS Fargate: 512 CPU (0.5 vCPU), 1024 MB memory
-      - 1 task instance (no auto-scaling)
-      - Claude 3.5 Sonnet model on Bedrock
-      - OpenSearch: 2x m8g.large instances
-      - No caching layer
-    
-    Primary Bottleneck: The 20-second latency is from LLM inference (Claude 3.5 Sonnet), but there's no caching to prevent repeated expensive
-    calls.
-    
-    🎯 Top Recommendations (Priority Order)
-    
-    Phase 1 - Highest Impact (Immediate):
-    1. Add ElastiCache Redis for response caching → 97% latency reduction on cache hits
-       2. Switch to Claude 3.5 Haiku → 75% latency reduction (19.6s → 5s)
-       3. Enable streaming responses → 90% better perceived performance
-       4. Reduce context docs from 5 to 3 → Faster vector search
-    
-    Phase 2 - Infrastructure (Short-term):
-    5. Add Bedrock VPC endpoint → Reduce network latency
-       6. Scale up ECS tasks → 1024 CPU, 2048 MB memory
-       7. Enable ECS auto-scaling → Handle traffic spikes
-       8. Optimize OpenSearch → Switch to r6g.large (memory-optimized)
-    
-    📊 Expected Results
-    
-    | Scenario              | Current P95 | Expected P95 | Improvement |
-    |-----------------------|-------------|--------------|-------------|
-    | Cache hit             | 19.6s       | 0.5s         | 97% ✨      |
-    | Cache miss (Haiku)    | 19.6s       | 5s           | 75%         |
-    | Streaming (perceived) | 19.6s       | 2s TTFB      | 90%         |
-    
-    💰 Cost Impact
-    
-    - Current: ~$150-200/month
-      - After optimizations: +$34/month (~17% increase)
-      - ROI: 75-97% latency reduction for 17% cost increase
-    
-    📋 Next Steps
-    
-    Neo is ready to implement these changes. Would you like Neo to:
-    1. Start with Phase 1 (caching + model switch)?
-       2. Create infrastructure patches for review?
-       3. Implement specific optimizations?
-    
-    View the full analysis: https://app.pulumi.com/<your-org>/neo/tasks/<task-id>
+   ::alert[Head over to the Pulumi Cloud Console to see the detailed analysis Neo has generated for the `otel-ai-chatbot-infra/ws` stack.]{type="info"}
+   ~~~
+   ⠋ Thinking...
+   Running tool neo-bridge with the param (from mcp server: pulumi)
+   ⋮  {
+   ⋮    "taskId": "03eb1822-dbae-447e-85e8-2560af65bad2"
+   ⋮  }
+   ⠋ Thinking... - Completed in 2.341s
+   
+   > Pulumi Neo has completed its analysis of the otel-ai-chatbot-infra/ws-2 stack based on your Honeycomb findings. Here's the comprehensive analysis:
+   
+   ## Key Infrastructure Bottlenecks Identified:
+   
+   ### **Critical Issues:**
+   1. Severely undersized ECS tasks - Only 512 CPU/1024 MB for LLM workloads
+   2. No auto-scaling - Single task handling all traffic
+   3. Target group timeout too short - 5s timeout vs 20+ second LLM responses
+   4. Network bottleneck - Single NAT gateway, no VPC endpoints for Bedrock
+   5. OpenSearch not HA - Single AZ deployment
+   
+   ### **Root Cause:**
+   While the 28.7s P95 latency is primarily due to LLM inference time (19-24s), infrastructure constraints are compounding the problem by causing resource contention and network
+   delays.
+   
+   ## **Priority 1 Fixes (Immediate Impact):**
+   
+   1. Increase ECS resources: 512→2048 CPU, 1024→4096 MB memory
+   2. Add VPC endpoint for Bedrock - Eliminates NAT gateway latency
+   3. Fix ALB timeouts - Increase to 120s for long LLM responses
+   4. Enable auto-scaling - 2-10 tasks with CPU/request-based scaling
+   
+   ## **Expected Results:**
+   - **Latency reduction**: From 28.7s to ~20-22s (removing infrastructure overhead)
+   - **Better resilience**: Handle traffic spikes without degradation
+   - **Cost optimization**: VPC endpoint saves NAT costs while improving performance
+   
+   The analysis shows that while LLM inference is the primary bottleneck, infrastructure optimizations can reduce overall latency by 20-30% and significantly improve system
+   reliability during peak periods.
+   
+   Would you like me to help implement any of these infrastructure optimizations?
    ~~~
 
 ::alert[**Neo's Power**: Notice how Neo analyzed the entire stack - infrastructure state, application code structure, and correlated with Honeycomb metrics - to provide a comprehensive diagnosis. It correctly identified this as an application-level issue, not infrastructure.]{type="success"}

@@ -7,8 +7,7 @@ Now let's use Kiro CLI to query the observability data we collected in Module 3.
 
 1. Ask Kiro CLI about recent application performance:
    ```
-   Using the Honeycomb MCP server, show me the P95 latency for successful chat requests
-   (status code 200) in the last hour for the otel-ai-chatbot-backend dataset
+   Using the Honeycomb MCP server, show me the P95 latency for successful chat requests (status code 200) in the last hour for the otel-ai-chatbot-backend dataset
    ```
 
    Kiro CLI will:
@@ -19,95 +18,107 @@ Now let's use Kiro CLI to query the observability data we collected in Module 3.
 
    Expected output:
    ```
-   ⏺ I'll help you query the P95 latency for successful chat requests from Honeycomb. Let me start by getting the workspace context and then run
-    the query.
-    ⎿ HONEYCOMB WORKSPACE CONTEXT
-    ============================
-    … +22 lines (ctrl+o to expand)
-    
-    ⏺ honeycomb - get_dataset_columns (MCP)(environment_slug: "otel-ai-chatbot-backend", dataset_slug: "otel-ai-chatbot-backend")
-    ⎿ # Page: 1 | Items per page: 1000 | Total items: 172 | Total pages: 1 | Has next page: false | Has previous page: false | All columns: fals
-    e | Dataset: otel-ai-chatbot-backend | Environment: otel-ai-chatbot-backend
-    … +242 lines (ctrl+o to expand)
-    
-    
-    ⏺ Now I'll query the P95 latency for successful chat requests (status code 200) in the last hour:
-    
-    ⏺ honeycomb - run_query (MCP)(environment_slug: "otel-ai-chatbot-backend", dataset_slug: "otel-ai-chatbot-backend", query_spec:
-    {"calculations":[{"op":"P95","column":"duration_ms"},{"op":"COUNT"}],"filters":[{"column":"http.status_code","op":"=",
-    "value":200}],"time_range":3600}, output_format: "ascii")
-    ┌───────┬──────────────────┐
-    │ COUNT │ P95(duration_ms) │
-    ├───────┼──────────────────┤
-    … +43 lines (ctrl+o to expand)
-    
-    ⏺ P95 Latency Results for Successful Chat Requests
-    
-    Based on the last hour of data from the otel-ai-chatbot-backend dataset:
-    
-    Key Metrics:
-    - P95 Latency: 17,552.49 ms (~17.5 seconds)
-      - Request Count: 127 successful requests (HTTP 200)
-    
-    Observations:
-    - The latency remains relatively stable throughout the hour at around 2ms
-      - There's a significant spike at the end of the time range reaching ~17.5 seconds
-      - Request volume shows consistent traffic with some increased activity towards the end
-    
-    The query filtered for http.status_code = 200 to capture only successful chat requests over the past 3600 seconds (1 hour).
-    
-    You can view the full query results here:
-    https://ui.honeycomb.io/ediri/environments/otel-ai-chatbot-backend/datasets/otel-ai-chatbot-backend/result/p4oFfcKjHSN
+   ...
+   > Perfect! Now I can see the actual HTTP spans for the /api/chat endpoint. I can see spans with http.target of /api/chat and duration_ms values. Let me query the P95 latency 
+   for successful chat requests using the correct field:
+   Running tool run_query with the param (from mcp server: honeycomb)
+   ⋮  {
+   ⋮    "dataset_slug": "otel-ai-chatbot-backend",
+   ⋮    "environment_slug": "otel-ai-chatbot-backend",
+   ⋮    "query_spec": "{\n  \"calculations\": [\n    {\n      \"op\": \"P95\",\n      \"column\": \"duration_ms\"\n    },\n    {\n      \"op\": \"COUNT\"\n    },\n    {\n      \"op\": \"AVG\",\n      \"column\": \"duration_ms\"\n    },\n    {\n      \"op\": \"P50\",\n      \"column\": \"duration_ms\"\n    }\n  ],\n  \"filters\": [\n    {\n      \"column\": \"meta.signal_type\",\n      \"op\": \"=\",\n      \"value\": \"trace\"\n    },\n    {\n      \"column\": \"http.target\",\n      \"op\": \"=\",\n      \"value\": \"/api/chat\"\n    },\n    {\n      \"column\": \"http.status_code\",\n      \"op\": \"=\",\n      \"value\": 200\n    }\n  ],\n  \"time_range\": 3600\n}"
+   ⋮  }
+   ⠋ Thinking... - Completed in 0.564s
+   ...
+   > Excellent! Here are the P95 latency results for successful chat requests (status code 200) in the last hour for the otel-ai-chatbot-backend dataset:
+
+   ## Chat Request Latency Metrics (Last Hour)
+   
+   - **P95 Latency**: 28,736.69 ms (~28.7 seconds)
+   - **P50 Latency**: 22,473.32 ms (~22.5 seconds)
+   - **Average Latency**: 21,446.78 ms (~21.4 seconds)
+   - **Request Count**: 17 successful requests
+   
+   ### Key Observations:
+   
+   1. High Latency: The chat requests are taking quite a long time (20+ seconds), which is typical for AI chatbot applications that involve:
+      - Vector database searches (OpenSearch)
+      - LLM API calls (Bedrock/Claude)
+      - Context retrieval and processing
+   
+      2. Consistent Performance: The P50 and average are close, suggesting relatively consistent response times with some outliers pushing the P95 higher.
+   
+      3. Active Usage: 17 successful chat requests in the last hour shows the application is being actively used.
+   
+   The high latency is expected for this type of AI application that performs RAG (Retrieval-Augmented Generation) with multiple API calls to AWS Bedrock and OpenSearch vector
+   database queries.
    ```
 
 2. Ask for more specific analysis:
    ```
-   Using Honeycomb, break down the latency by span name for successful requests.
-    Which operation is the slowest?
+   Using the Honeycomb MCP, break down the latency by span name for successful requests. Which operation is the slowest?
    ```
 
    Expected output:
    ```
-    ⏺ I'll query Honeycomb to break down the latency by span name for successful requests.
-    
-    ⏺ honeycomb - run_query (MCP)(environment_slug: "otel-ai-chatbot-backend", dataset_slug: "otel-ai-chatbot-backend", query_spec:
-    {"calculations":[{"op":"P95","column":"duration_ms"},{"op":"AVG","column":"duration_ms"},{"op":"COUNT"}],"filters":[{"
-    column":"http.status_code","op":"=","value":200}],"breakdowns":["name"],"orders":[{"op":"P95","column":"duration_ms","
-    order":"descending"}],"limit":20,"time_range":3600}, output_format: "ascii")
-    ┌──────────────────┬───────┬──────────────────┬────────────────────────────────────────────────┐
-    │ AVG(duration_ms) │ COUNT │ P95(duration_ms) │ name                                           │
-    ├──────────────────┼───────┼──────────────────┼────────────────────────────────────────────────┤
-    … +206 lines (ctrl+o to expand)
-    
-    ⏺ Latency Breakdown by Span Name
-    
-    Here's the breakdown of latency for successful requests (HTTP 200), sorted by P95 latency:
-    
-    | Span Name                                      | P95 Latency           | Avg Latency         | Count |
-    |------------------------------------------------|-----------------------|---------------------|-------|
-    | chat anthropic.claude-3-5-sonnet-20240620-v1:0 | 19,621.77 ms (~19.6s) | 16,977.87 ms (~17s) | 7     |
-    | POST                                           | 19,202.18 ms (~19.2s) | 8,583.47 ms (~8.6s) | 14    |
-    | BedrockRuntime.InvokeModel                     | 186.00 ms             | 115.68 ms           | 7     |
-    | GET                                            | 2.60 ms               | 1.94 ms             | 98    |
-    
-    Slowest Operation: Chat with Claude 3.5 Sonnet
-    
-    The chat anthropic.claude-3-5-sonnet-20240620-v1:0 operation is by far the slowest, with:
-    - P95 latency of ~19.6 seconds
-      - Average latency of ~17 seconds
-      - Only 7 requests in the past hour
-    
-    This represents the LLM generation phase where the chatbot is invoking Claude 3.5 Sonnet on AWS Bedrock to generate responses. The high
-    latency is expected for LLM inference, especially with:
-    - Large context windows (retrieving documentation chunks)
-      - Streaming responses
-      - Token generation overhead
-    
-    The POST endpoint (the overall HTTP request handler) shows similar P95 latency, which makes sense since it encompasses the chat operation
-    along with other processing steps like vector search and context formatting.
-    
-    View full query results:
-    https://ui.honeycomb.io/ediri/environments/otel-ai-chatbot-backend/datasets/otel-ai-chatbot-backend/result/dswrYHfTwsP
+   > I'll break down the latency by span name to identify which operation is the slowest for successful chat requests.
+   Running tool run_query with the param (from mcp server: honeycomb)
+   ⋮  {
+   ⋮    "dataset_slug": "otel-ai-chatbot-backend",
+   ⋮    "environment_slug": "otel-ai-chatbot-backend",
+   ⋮    "query_spec": "{\n  \"calculations\": [\n    {\n      \"op\": \"P95\",\n      \"column\": \"duration_ms\"\n    },\n    {\n      \"op\": \"COUNT\"\n    },\n    {\n      \"op\": \"AVG\",\n      \"column\": \"duration_ms\"\n    },\n    {\n      \"op\": \"P50\",\n      \"column\": \"duration_ms\"\n    }\n  ],\n  \"breakdowns\": [\"name\"],\n  \"filters\": [\n    {\n      \"column\": \"meta.signal_type\",\n      \"op\": \"=\",\n      \"value\": \"trace\"\n    },\n    {\n      \"column\": \"http.status_code\",\n      \"op\": \"=\",\n      \"value\": 200\n    }\n  ],\n  \"orders\": [\n    {\n      \"op\": \"P95\",\n      \"column\": \"duration_ms\",\n      \"order\": \"descending\"\n    }\n  ],\n  \"time_range\": 3600,\n  \"limit\": 15\n}"
+   ⋮  }
+   - Completed in 0.641s
+   
+   > Perfect! Here's the latency breakdown by span name for successful requests, ordered by P95 latency:
+   
+   ## Latency Breakdown by Operation (Slowest to Fastest)
+   
+   ### 1. Claude LLM Calls - SLOWEST 🐌
+   - **Span**: chat anthropic.claude-3-5-sonnet-20240620-v1:0
+   - **P95**: 28,592.62 ms (~28.6 seconds)
+   - **P50**: 22,320.78 ms (~22.3 seconds)
+   - **Average**: 21,279.58 ms (~21.3 seconds)
+   - **Count**: 17 requests
+   
+   ### 2. HTTP POST Requests (Chat Endpoints)
+   - **Span**: POST
+   - **P95**: 26,586.46 ms (~26.6 seconds)
+   - **P50**: 15,191.53 ms (~15.2 seconds)
+   - **Average**: 10,736.46 ms (~10.7 seconds)
+   - **Count**: 34 requests
+   
+   ### 3. HTTP GET Requests
+   - **Span**: GET
+   - **P95**: 204.84 ms (~0.2 seconds)
+   - **P50**: 3.51 ms
+   - **Average**: 18.87 ms
+   - **Count**: 14 requests
+   
+   ### 4. Bedrock Embedding Calls
+   - **Span**: BedrockRuntime.InvokeModel
+   - **P95**: 179.22 ms (~0.18 seconds)
+   - **P50**: 122.93 ms
+   - **Average**: 128.11 ms
+   - **Count**: 17 requests
+   
+   ### 5. HTTP HEAD Requests - FASTEST ⚡
+   - **Span**: HEAD
+   - **P95**: 130.23 ms
+   - **P50**: 130.23 ms
+   - **Average**: 66.39 ms
+   - **Count**: 2 requests
+   
+   ## Key Findings:
+   
+   🔴 Bottleneck Identified: The Claude LLM API calls are by far the slowest operation, taking ~28.6 seconds at P95. This accounts for the majority of the total request latency.
+   
+   Performance Hierarchy:
+   1. Claude LLM (~28.6s) - The primary bottleneck
+      2. Bedrock Embeddings (~0.18s) - Fast and efficient
+      3. HTTP operations (<0.2s) - Very fast
+   
+   The Claude LLM calls dominate the total request time, which is expected for AI chatbot applications where the language model generation is the most computationally intensive
+   operation.
    ```
 
 3. Check for errors:
@@ -117,17 +128,32 @@ Now let's use Kiro CLI to query the observability data we collected in Module 3.
 
    Expected output:
    ```
-   ┌───────┐
-   │ COUNT │
-   ├───────┤
-   │     0 │
-   └───────┘
+   - Completed in 0.138s
 
-   No errors found in the last hour.
+   > ## ✅ No Errors Found in the Last Hour
 
-   Analysis: The application is running without errors, which is good.
-   The performance issue is not caused by errors or exceptions, but rather
-   by slow LLM response times.
+   Based on my analysis of the Honeycomb data for the otel-ai-chatbot-backend dataset, there are no errors in the last hour:
+   
+   ### Error Analysis Results:
+   
+   1. No Error Flags: No events with error = true
+   2. No HTTP Errors: No 4xx or 5xx status codes
+   3. No Exceptions: No exception messages or stack traces
+   4. No Error Logs: No error or warning severity levels
+
+   ### What I Found Instead:
+   
+   Healthy Status Indicators:
+   - **430 info logs** - Normal informational logging
+   - **356 debug logs** - Debug-level logging (healthy)
+   - **81 HTTP 200 responses** - Successful requests
+   - **1 HTTP 304 response** - Not Modified (normal caching behavior)
+   
+   ### Summary:
+   The application appears to be running smoothly with no errors in the past hour. All HTTP requests are returning successful status codes (200/304), and the logging shows only
+   normal info and debug level messages with no error or warning entries.
+
+   This indicates the otel-ai-chatbot-backend is operating in a healthy state! 🎉
    ```
 
 ::alert[**Natural Language Queries**: Notice you don't need to learn Honeycomb's query syntax. Kiro CLI translates your natural language request into proper Honeycomb queries using the MCP server.]{type="success"}

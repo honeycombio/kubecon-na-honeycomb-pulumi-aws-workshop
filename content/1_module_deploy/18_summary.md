@@ -41,7 +41,12 @@ pulumi env run honeycomb-pulumi-workshop/ws -i -- aws opensearch describe-domain
 
 **Solution**: Check CloudWatch Logs for application errors:
 ```bash
-pulumi env run honeycomb-pulumi-workshop/ws -i -- aws logs tail /aws/ecs/otel-ai-chatbot-logs --since 10m
+# Find the log group name (has Pulumi-generated suffix)
+LOG_GROUP=$(pulumi env run honeycomb-pulumi-workshop/ws -i -- \
+  aws logs describe-log-groups --log-group-name-prefix otel-ai-chatbot-logs \
+  --query 'logGroups[0].logGroupName' --output text)
+
+pulumi env run honeycomb-pulumi-workshop/ws -i -- aws logs tail $LOG_GROUP --since 10m
 ```
 
 Common issues:

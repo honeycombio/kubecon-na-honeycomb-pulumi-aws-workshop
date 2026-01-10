@@ -56,12 +56,24 @@ LOAD_PID=$!
 echo "Load generator PID: $LOAD_PID"
 ```
 
-3. Let it run for 2-3 minutes to generate sufficient data. You can monitor CloudWatch logs:
+3. To stop the load generator when you're done:
 
 ```bash
-pulumi env run honeycomb-pulumi-workshop-dev -i -- aws logs tail \
-  /aws/ecs/otel-ai-chatbot-logs \
-  --follow --filter-pattern "POST /api/chat"
+kill $LOAD_PID
+```
+
+4. Let it run for 2-3 minutes to generate sufficient data. You can monitor CloudWatch logs:
+
+```bash
+cd /workshop/ai-workshop/pulumi
+# Find the log group name (has Pulumi-generated suffix)
+LOG_GROUP=$(pulumi env run honeycomb-pulumi-workshop/ws -i -- \
+  aws logs describe-log-groups --log-group-name-prefix otel-ai-chatbot-logs \
+  --query 'logGroups[0].logGroupName' --output text)
+
+pulumi env run honeycomb-pulumi-workshop/ws -i -- aws logs tail \
+  $LOG_GROUP \
+  --follow --filter-pattern "api chat"
 ```
 
 Press `Ctrl+C` after observing requests flowing through.
