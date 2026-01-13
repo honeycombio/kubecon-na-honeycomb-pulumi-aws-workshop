@@ -9,6 +9,8 @@ Pulumi ESC (Environments, Secrets, and Configuration) provides secure secrets ma
 
 Before creating the workshop environment, you need to configure AWS OIDC authentication. We will do it but running Cloud Formation (CFN) template which creates the identity provider and configures the IAM role with trust policy. To learn more you can check [Pulumi documentation](https://www.pulumi.com/docs/esc/environments/configuring-oidc/aws/).
 
+:image[CloudFormation Upload Template]{src="/static/images/pulumi/cfn-upload-template.png" width=600}
+
 ::alert[**What is OIDC?** OpenID Connect (OIDC) allows Pulumi ESC to assume AWS IAM roles without storing long-lived credentials. This is a **security best practice** - credentials are dynamically generated and expire after 1 hour.]{type="note"}
 
 1. Download Cloud Formation Template :link[**here**]{href=":assetUrl{path="../static/infrastructure/pulumi-oidc.yaml"}" action=download} to automatically provision the identity provider and the IAM role

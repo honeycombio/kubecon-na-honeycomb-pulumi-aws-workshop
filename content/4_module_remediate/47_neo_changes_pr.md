@@ -44,6 +44,8 @@ Let's ask Neo to implement the highest-impact solution: **Enable Streaming Respo
    approval to proceed with the Pulumi preview and PR creation.
    ~~~
 
+::alert[**Iterative Collaboration**: Don't expect a perfect result on the first try! Working with agentic AI like Kiro is often an iterative process. You may need to answer clarifying questions, provide additional context, or give feedback to refine the solution. This back-and-forth conversation is a feature, not a bug. It helps ensure the AI understands your specific requirements and constraints. Additionally, it is worth checking the Neo task in Pulumi Cloud in case you need to approve any pending actions there.]{type="info"}
+
 ::alert[**The Complete Agentic Loop**: Neo just demonstrated end-to-end automation - from observability data to PR creation. It analyzed Honeycomb metrics (Step 4), diagnosed the issue (Step 5), provided recommendations (Step 6), generated code patches, and created a production-ready PR (Step 7). This is AI-powered infrastructure management in action with human-in-the-loop oversight.]{type="success"}
 
 ## Review the Pull Request
