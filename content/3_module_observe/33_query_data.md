@@ -148,7 +148,7 @@ Honeycomb's **Query Assistant** uses AI to translate natural language questions 
 
    **Example 2**: "Which users are consuming the most tokens?"
 
-   First, create a derived column (see Step 6 for details):
+   First, create a calculated field (see Step 6 for details):
    - **Name**: `gen_ai.usage.total_tokens`
    - **Expression**: `SUM($gen_ai.usage.input_tokens, $gen_ai.usage.output_tokens)`
 
@@ -178,7 +178,7 @@ The **HAVING** clause filters on aggregated results, which is essential when wor
 
 **Example: Find users with excessive token usage**
 
-First, ensure you've created the `gen_ai.usage.total_tokens` derived column (from Example 2 above).
+First, ensure you've created the `gen_ai.usage.total_tokens` calculated field (from Example 2 above).
 
 Then create a query:
    - **VISUALIZE**: `SUM(gen_ai.usage.total_tokens)`, `COUNT`

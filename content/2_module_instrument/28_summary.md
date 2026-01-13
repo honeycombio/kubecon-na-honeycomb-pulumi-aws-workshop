@@ -6,14 +6,23 @@ weight: 48
 Congratulations! You've successfully:
 
 ✅ Explored the existing OpenTelemetry instrumentation in the application
+
 ✅ Understood auto-instrumentation for Express, HTTP, and AWS SDK
+
 ✅ Reviewed custom GenAI tracing with v1.0 semantic conventions
+
 ✅ Learned about high-cardinality attributes and why they matter
+
 ✅ Verified Honeycomb configuration in the ECS task
+
 ✅ Generated traffic and confirmed traces are flowing to Honeycomb
+
 ✅ Examined trace structure and GenAI-specific attributes
+
 ✅ Understood log-trace correlation
+
 ✅ Learned deployment markers for correlating changes with performance
+
 ✅ Explored sampling strategies for production deployments
 
 ## Key Takeaways

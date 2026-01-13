@@ -6,12 +6,19 @@ weight: 510
 Congratulations! You've successfully:
 
 ✅ Generated realistic load on the application
+
 ✅ Explored traces in Honeycomb's interface
+
 ✅ Used Honeycomb queries to analyze latency patterns
+
 ✅ Identified performance bottlenecks (Bedrock calls, OpenSearch queries)
+
 ✅ Discovered infrastructure constraints (undersized ECS tasks)
+
 ✅ Created a monitoring board for ongoing visibility
+
 ✅ Set up alerting for latency degradation
+
 ✅ Formulated a hypothesis for remediation
 
 ## What's Next?

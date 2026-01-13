@@ -40,7 +40,7 @@ Boards in Honeycomb let you create dashboards for ongoing monitoring. Let's crea
 - **GROUP BY**: `db.vector.k` (number of results requested)
 - **Graph Type**: Line chart
 
-**Graph 6: Estimated API Costs** (using derived column)
+**Graph 6: Estimated API Costs** (using calculated field)
 - **VISUALIZE**: `SUM(cost_per_request_usd)`
 - **GROUP BY**: `time` (1-hour buckets)
 - **Graph Type**: Line chart

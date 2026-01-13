@@ -21,8 +21,11 @@ In this module, you'll explore the OpenTelemetry instrumentation that's already 
 Unlike traditional approaches where instrumentation is added after deployment, this application demonstrates **observability-first architecture**:
 
 ✅ OpenTelemetry instrumentation exists **before** the first deployment
+
 ✅ Traces, logs, and metrics are **built into** the application architecture
+
 ✅ Configuration is **declarative** via environment variables
+
 ✅ GenAI-specific semantics follow **emerging standards**
 
 ::alert[**Philosophy**: In production systems, observability should be non-negotiable infrastructure, just like logging and error handling. This workshop shows how to build it in from the start.]{type="info"}
