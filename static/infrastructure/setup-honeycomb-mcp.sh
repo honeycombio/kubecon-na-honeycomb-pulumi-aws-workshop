@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
-# Register the Honeycomb MCP server with AWS DevOps Agent and associate it
-# with an Agent Space.
+# Set up DevOps Agent operator app and register Honeycomb MCP server.
 #
-# The Honeycomb MCP server uses OAuth 2.0 authorization code flow. This script
-# registers the MCP server using authorization discovery (auto-discovers OAuth
-# endpoints from Honeycomb's .well-known metadata), then opens a browser for
-# you to authorize the connection. After authorization, it associates the
-# registered service with the Agent Space.
+# This script:
+# 1. Enables the operator app (web UI) using IAM auth flow
+# 2. Registers the Honeycomb MCP server via OAuth authorization discovery
+# 3. Associates the Honeycomb MCP server with the Agent Space
 #
 # Usage:
-#   ./setup-honeycomb-mcp.sh <AGENT_SPACE_ID>
+#   ./setup-honeycomb-mcp.sh <CFN_STACK_NAME>
 #
 # Prerequisites:
 #   - AWS CLI v2 configured with credentials for the target account
@@ -25,13 +23,13 @@ REGION="us-east-1"
 ENDPOINT="https://api.prod.cp.aidevops.us-east-1.api.aws"
 
 if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 <AGENT_SPACE_ID>"
+  echo "Usage: $0 <CFN_STACK_NAME>"
   echo ""
-  echo "  AGENT_SPACE_ID   From CloudFormation output AgentSpaceId"
+  echo "  CFN_STACK_NAME   Name of the deployed devops_agent.yaml CloudFormation stack"
   exit 1
 fi
 
-AGENT_SPACE_ID="$1"
+CFN_STACK_NAME="$1"
 
 # Verify the devopsagent service model is installed
 if ! aws devopsagent help >/dev/null 2>&1; then
@@ -43,6 +41,54 @@ if ! aws devopsagent help >/dev/null 2>&1; then
   exit 1
 fi
 
+echo "==> Reading stack outputs from $CFN_STACK_NAME..."
+
+STACK_OUTPUTS=$(aws cloudformation describe-stacks \
+    --stack-name "$CFN_STACK_NAME" \
+    --region "$REGION" \
+    --query 'Stacks[0].Outputs' --output json 2>&1)
+
+AGENT_SPACE_ID=$(echo "$STACK_OUTPUTS" | jq -r '.[] | select(.OutputKey == "AgentSpaceId") | .OutputValue')
+OPERATOR_ROLE_ARN=$(echo "$STACK_OUTPUTS" | jq -r '.[] | select(.OutputKey == "OperatorAppRoleArn") | .OutputValue')
+
+if [[ -z "$AGENT_SPACE_ID" ]]; then
+  echo "ERROR: Could not find AgentSpaceId in stack outputs."
+  exit 1
+fi
+if [[ -z "$OPERATOR_ROLE_ARN" ]]; then
+  echo "ERROR: Could not find OperatorAppRoleArn in stack outputs."
+  exit 1
+fi
+
+echo "    Agent Space ID:     $AGENT_SPACE_ID"
+echo "    Operator Role ARN:  $OPERATOR_ROLE_ARN"
+
+# --- Step 1: Enable operator app ---
+
+echo ""
+echo "==> Enabling operator app (IAM auth flow)..."
+
+ENABLE_OUTPUT=""
+if ! ENABLE_OUTPUT=$(aws devopsagent enable-operator-app \
+    --agent-space-id "$AGENT_SPACE_ID" \
+    --auth-flow iam \
+    --operator-app-role-arn "$OPERATOR_ROLE_ARN" \
+    --region "$REGION" \
+    --endpoint-url "$ENDPOINT" 2>&1); then
+  # Already enabled is not an error
+  if echo "$ENABLE_OUTPUT" | grep -q "already enabled\|AlreadyExists\|ConflictException"; then
+    echo "    Operator app already enabled, skipping."
+  else
+    echo "ERROR: Failed to enable operator app."
+    echo "$ENABLE_OUTPUT"
+    exit 1
+  fi
+else
+  echo "    Operator app enabled."
+fi
+
+# --- Step 2: Register Honeycomb MCP server ---
+
 # Tools to allowlist (read-only operations only)
 TOOLS_JSON='[
   "run_query", "run_bubbleup", "get_trace",
@@ -52,6 +98,7 @@ TOOLS_JSON='[
   "list_boards"
 ]'
 
+echo ""
 echo "==> Registering Honeycomb MCP server (OAuth authorization discovery)..."
 
 REGISTER_PAYLOAD='{
@@ -102,6 +149,8 @@ fi
 echo "    Authorize the connection in Honeycomb, then press Enter to continue..."
 read -r
 
+# --- Step 3: Associate Honeycomb MCP with Agent Space ---
+
 echo "==> Looking up Honeycomb service ID..."
 
 SERVICE_ID=""
@@ -147,13 +196,14 @@ ASSOCIATION_ID=$(echo "$ASSOCIATE_OUTPUT" | jq -r '.association.associationId //
 
 echo ""
 echo "==> Done!"
+echo "    Agent Space ID: $AGENT_SPACE_ID"
 echo "    Service ID:     $SERVICE_ID"
 if [[ -n "$ASSOCIATION_ID" ]]; then
   echo "    Association ID: $ASSOCIATION_ID"
 fi
 echo ""
-echo "Verify in the console:"
-echo "  https://us-east-1.console.aws.amazon.com/devopsagent/"
+echo "Open the DevOps Agent console:"
+echo "  https://us-east-1.console.aws.amazon.com/devopsagent/home?region=us-east-1#/spaces/$AGENT_SPACE_ID"
 echo ""
-echo "Or via CLI:"
+echo "Or verify via CLI:"
 echo "  aws devopsagent list-associations --agent-space-id $AGENT_SPACE_ID --region $REGION --endpoint-url $ENDPOINT"

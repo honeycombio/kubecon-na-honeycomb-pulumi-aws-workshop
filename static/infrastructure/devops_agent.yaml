@@ -3,12 +3,13 @@ Description: |
   AWS DevOps Agent with Honeycomb MCP integration for the KubeCon workshop demo.
 
   This template creates:
-  - An IAM role trusted by the DevOps Agent service
+  - An IAM role trusted by the DevOps Agent service (monitoring)
+  - An operator app IAM role (web UI access)
   - An Agent Space for interacting with operational queries
   - An AWS account association so the agent can monitor your account
 
-  After deploying this stack, run setup-honeycomb-mcp.sh to register the
-  Honeycomb MCP server (no CloudFormation resource type exists for MCP servers).
+  After deploying this stack, run setup-honeycomb-mcp.sh to enable the
+  operator app and register the Honeycomb MCP server.
 
 Parameters:
   AgentSpaceName:
@@ -59,6 +60,68 @@ Resources:
         - Key: Purpose
           Value: DevOps Agent Workshop
 
+  OperatorAppRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AgentSpaceName}-operator-app-role'
+      Description: IAM role for DevOps Agent operator app (web UI access)
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: aidevops.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'aws:SourceAccount': !Ref AWS::AccountId
+              ArnLike:
+                'aws:SourceArn': !Sub 'arn:aws:aidevops:us-east-1:${AWS::AccountId}:agentspace/*'
+      Policies:
+        - PolicyName: OperatorAppPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowBasicOperatorActions
+                Effect: Allow
+                Action:
+                  - aidevops:GetAgentSpace
+                  - aidevops:GetAssociation
+                  - aidevops:ListAssociations
+                  - aidevops:CreateBacklogTask
+                  - aidevops:GetBacklogTask
+                  - aidevops:UpdateBacklogTask
+                  - aidevops:ListBacklogTasks
+                  - aidevops:ListChildExecutions
+                  - aidevops:ListJournalRecords
+                  - aidevops:DiscoverTopology
+                  - aidevops:InvokeAgent
+                  - aidevops:ListGoals
+                  - aidevops:ListRecommendations
+                  - aidevops:ListExecutions
+                  - aidevops:GetRecommendation
+                  - aidevops:UpdateRecommendation
+                  - aidevops:CreateKnowledgeItem
+                  - aidevops:ListKnowledgeItems
+                  - aidevops:GetKnowledgeItem
+                  - aidevops:UpdateKnowledgeItem
+                  - aidevops:ListPendingMessages
+                  - aidevops:InitiateChatForCase
+                  - aidevops:EndChatForCase
+                  - aidevops:DescribeSupportLevel
+                  - aidevops:SendChatMessage
+                Resource: !Sub 'arn:aws:aidevops:us-east-1:${AWS::AccountId}:agentspace/*'
+              - Sid: AllowSupportOperatorActions
+                Effect: Allow
+                Action:
+                  - support:DescribeCases
+                  - support:InitiateChatForCase
+                  - support:DescribeSupportLevel
+                Resource: '*'
+      Tags:
+        - Key: Purpose
+          Value: DevOps Agent Workshop
+
   AgentSpace:
     Type: AWS::DevOpsAgent::AgentSpace
     DependsOn: DevOpsAgentRole
@@ -96,11 +159,17 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-DevOpsAgentRoleArn'
 
+  OperatorAppRoleArn:
+    Description: ARN of the IAM role for operator app (web UI)
+    Value: !GetAtt OperatorAppRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-OperatorAppRoleArn'
+
   PostDeployInstructions:
     Description: Next steps after stack creation
     Value: !Sub |
-      Stack deployed successfully. To add Honeycomb MCP integration, run:
+      Stack deployed successfully. To enable the operator app and add Honeycomb MCP, run:
 
-        ./setup-honeycomb-mcp.sh ${AgentSpace}
+        ./setup-honeycomb-mcp.sh ${AWS::StackName}
 
-      You will be prompted to authorize via OAuth in your browser.
+      You will be prompted to authorize Honeycomb via OAuth in your browser.
