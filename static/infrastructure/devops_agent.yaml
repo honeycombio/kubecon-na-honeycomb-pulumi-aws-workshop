@@ -75,7 +75,7 @@ Resources:
         Aws:
           AccountId: !Ref AWS::AccountId
           AccountType: monitor
-          RoleArn: !GetAtt DevOpsAgentRole.Arn
+          AssumableRoleArn: !GetAtt DevOpsAgentRole.Arn
 
 Outputs:
   AgentSpaceId:
@@ -101,7 +101,6 @@ Outputs:
     Value: !Sub |
       Stack deployed successfully. To add Honeycomb MCP integration, run:
 
-        ./setup-honeycomb-mcp.sh ${AgentSpace} <HONEYCOMB_KEY_ID> <HONEYCOMB_KEY_SECRET>
+        ./setup-honeycomb-mcp.sh ${AgentSpace}
 
-      Get your Honeycomb Management Key from:
-        https://ui.honeycomb.io/teams/_/manage/keys
+      You will be prompted to authorize via OAuth in your browser.
