@@ -2,9 +2,10 @@
 # Set up DevOps Agent operator app and register Honeycomb MCP server.
 #
 # This script:
-# 1. Enables the operator app (web UI) using IAM auth flow
-# 2. Registers the Honeycomb MCP server via OAuth authorization discovery
-# 3. Associates the Honeycomb MCP server with the Agent Space
+# 1. Enables X-Ray Transaction Search (required for OTLP trace ingestion)
+# 2. Enables the operator app (web UI) using IAM auth flow
+# 3. Registers the Honeycomb MCP server via OAuth authorization discovery
+# 4. Associates the Honeycomb MCP server with the Agent Space
 #
 # Usage:
 #   ./setup-honeycomb-mcp.sh <CFN_STACK_NAME>
@@ -63,7 +64,27 @@ fi
 echo "    Agent Space ID:     $AGENT_SPACE_ID"
 echo "    Operator Role ARN:  $OPERATOR_ROLE_ARN"
 
-# --- Step 1: Enable operator app ---
+# --- Step 1: Enable X-Ray Transaction Search ---
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --region "$REGION")
+
+echo ""
+echo "==> Enabling X-Ray Transaction Search (CloudWatch Logs trace destination)..."
+
+# The CFN stack creates the CW Logs resource policy, but the
+# UpdateTraceSegmentDestination API has no native CFN resource type.
+aws xray update-trace-segment-destination \
+    --destination CloudWatchLogs \
+    --region "$REGION" 2>&1 || true
+
+aws xray update-indexing-rule \
+    --name "Default" \
+    --rule '{"Probabilistic": {"DesiredSamplingPercentage": 100}}' \
+    --region "$REGION" >/dev/null 2>&1 || true
+
+echo "    X-Ray Transaction Search enabled (100% indexing)."
+
+# --- Step 2: Enable operator app ---
 
 echo ""
 echo "==> Enabling operator app (IAM auth flow)..."
@@ -87,7 +108,7 @@ else
   echo "    Operator app enabled."
 fi
 
-# --- Step 2: Register Honeycomb MCP server ---
+# --- Step 3: Register Honeycomb MCP server ---
 
 # Tools to allowlist (read-only operations only)
 TOOLS_JSON='[
@@ -149,7 +170,7 @@ fi
 echo "    Authorize the connection in Honeycomb, then press Enter to continue..."
 read -r
 
-# --- Step 3: Associate Honeycomb MCP with Agent Space ---
+# --- Step 4: Associate Honeycomb MCP with Agent Space ---
 
 echo "==> Looking up Honeycomb service ID..."
 
