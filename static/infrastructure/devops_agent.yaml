@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  AWS DevOps Agent with Honeycomb MCP integration for the KubeCon workshop demo.
+
+  This template creates:
+  - An IAM role trusted by the DevOps Agent service
+  - An Agent Space for interacting with operational queries
+  - An AWS account association so the agent can monitor your account
+
+  After deploying this stack, run setup-honeycomb-mcp.sh to register the
+  Honeycomb MCP server (no CloudFormation resource type exists for MCP servers).
+
+Parameters:
+  AgentSpaceName:
+    Type: String
+    Default: honeycomb-workshop
+    Description: Name for the DevOps Agent Space
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: Must contain only alphanumeric characters and hyphens
+
+  AgentSpaceDescription:
+    Type: String
+    Default: 'KubeCon workshop Agent Space with Honeycomb observability via MCP'
+    Description: Description for the DevOps Agent Space
+
+Resources:
+  DevOpsAgentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AgentSpaceName}-devops-agent-role'
+      Description: IAM role for AWS DevOps Agent to monitor this account
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: aidevops.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'aws:SourceAccount': !Ref AWS::AccountId
+              ArnLike:
+                'aws:SourceArn': !Sub 'arn:aws:aidevops:us-east-1:${AWS::AccountId}:agentspace/*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AIOpsAssistantPolicy
+      Policies:
+        - PolicyName: DevOpsAgentAdditionalPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - support:CreateCase
+                  - support:DescribeCases
+                  - aidevops:GetKnowledgeItem
+                  - aidevops:ListKnowledgeItems
+                Resource: '*'
+      Tags:
+        - Key: Purpose
+          Value: DevOps Agent Workshop
+
+  AgentSpace:
+    Type: AWS::DevOpsAgent::AgentSpace
+    DependsOn: DevOpsAgentRole
+    Properties:
+      Name: !Ref AgentSpaceName
+      Description: !Ref AgentSpaceDescription
+
+  AwsAccountAssociation:
+    Type: AWS::DevOpsAgent::Association
+    Properties:
+      AgentSpaceId: !Ref AgentSpace
+      ServiceId: aws
+      Configuration:
+        Aws:
+          AccountId: !Ref AWS::AccountId
+          AccountType: monitor
+          RoleArn: !GetAtt DevOpsAgentRole.Arn
+
+Outputs:
+  AgentSpaceId:
+    Description: ID of the DevOps Agent Space (pass to setup-honeycomb-mcp.sh)
+    Value: !Ref AgentSpace
+    Export:
+      Name: !Sub '${AWS::StackName}-AgentSpaceId'
+
+  AgentSpaceArn:
+    Description: ARN of the DevOps Agent Space
+    Value: !GetAtt AgentSpace.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-AgentSpaceArn'
+
+  DevOpsAgentRoleArn:
+    Description: ARN of the IAM role used by the DevOps Agent
+    Value: !GetAtt DevOpsAgentRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-DevOpsAgentRoleArn'
+
+  PostDeployInstructions:
+    Description: Next steps after stack creation
+    Value: !Sub |
+      Stack deployed successfully. To add Honeycomb MCP integration, run:
+
+        ./setup-honeycomb-mcp.sh ${AgentSpace} <HONEYCOMB_KEY_ID> <HONEYCOMB_KEY_SECRET>
+
+      Get your Honeycomb Management Key from:
+        https://ui.honeycomb.io/teams/_/manage/keys
