@@ -38,7 +38,7 @@ Based on the Honeycomb data, here are the GenAI attributes being captured on the
 |-----------|---------------|------------------|
 | gen_ai.system | aws.bedrock | ✅ Required |
 | gen_ai.operation.name | chat | ✅ Required |
-| gen_ai.request.model | anthropic.claude-3-5-sonnet-20240620-v1:0 | ✅ Required |
+| gen_ai.request.model | us.anthropic.claude-haiku-4-5-20251001-v1:0 | ✅ Required |
 | gen_ai.request.max_tokens | 1000 | ✅ Optional |
 | gen_ai.request.temperature | 0.70 | ✅ Optional |
 | gen_ai.usage.input_tokens | 1242 | ✅ Optional |

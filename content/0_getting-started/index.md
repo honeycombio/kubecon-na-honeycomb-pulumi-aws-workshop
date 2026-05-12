@@ -46,7 +46,7 @@ In this workshop, you'll deploy and operate a **GenAI chatbot application** that
         │  │                                          │ │
         │  │  - React Frontend + Express API          │ │
         │  │  - OpenTelemetry Instrumentation         │ │
-        │  │  - AWS Bedrock (Claude 3.5 Sonnet)       │ │
+        │  │  - AWS Bedrock (Claude Haiku 4.5)        │ │
         │  │  - Exports traces to Honeycomb           │ │
         │  └──────────────────────────────────────────┘ │
         └───────────────────────────────────────────────┘
@@ -64,7 +64,7 @@ In this workshop, you'll deploy and operate a **GenAI chatbot application** that
 - **ECS Fargate**: Serverless container platform running the OTel AI Chatbot
 - **Application Load Balancer**: Routes traffic to the application (frontend + API)
 - **Amazon OpenSearch**: Vector database for RAG (Retrieval Augmented Generation)
-- **AWS Bedrock**: Provides Claude 3.5 Sonnet for AI responses
+- **AWS Bedrock**: Provides Claude Haiku 4.5 for AI responses
 - **Amazon ECR**: Private container registry for Docker images
 
 **Observability & Management:**

@@ -28,7 +28,7 @@ By the end of this module, you'll have a fully functional GenAI chatbot running 
 - **IAM roles** for secure service-to-service communication
 - **CloudWatch Logs** for application logging
 
-::alert[**Architecture Note**: The application uses AWS Bedrock (Claude 3.5 Sonnet) for AI responses and OpenSearch for semantic search over OpenTelemetry documentation. The entire stack is deployed as code using Pulumi TypeScript.]{type="info"}
+::alert[**Architecture Note**: The application uses AWS Bedrock (Claude Haiku 4.5) for AI responses and OpenSearch for semantic search over OpenTelemetry documentation. The entire stack is deployed as code using Pulumi TypeScript.]{type="info"}
 
 ## Access Your Development Environment
 
@@ -65,9 +65,6 @@ pulumi token:
 
 honeycomb env: 
 honeycomb ingest key: 
-honeycomb management key
-    key secret:  
-    key_id: 
    ```
 
 :image[VSCode project]{src="/static/images/pulumi/vscode-project-structure.png" width=750}
