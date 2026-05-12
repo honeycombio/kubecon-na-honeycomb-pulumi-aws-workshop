@@ -1,0 +1,210 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  AWS DevOps Agent with Honeycomb MCP integration for the KubeCon workshop demo.
+
+  This template creates:
+  - An IAM role trusted by the DevOps Agent service (monitoring)
+  - An operator app IAM role (web UI access)
+  - An Agent Space for interacting with operational queries
+  - An AWS account association so the agent can monitor your account
+
+  After deploying this stack, run setup-honeycomb-mcp.sh to enable the
+  operator app and register the Honeycomb MCP server.
+
+Parameters:
+  AgentSpaceName:
+    Type: String
+    Default: honeycomb-workshop
+    Description: Name for the DevOps Agent Space
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: Must contain only alphanumeric characters and hyphens
+
+  AgentSpaceDescription:
+    Type: String
+    Default: 'KubeCon workshop Agent Space with Honeycomb observability via MCP'
+    Description: Description for the DevOps Agent Space
+
+Resources:
+  DevOpsAgentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AgentSpaceName}-devops-agent-role'
+      Description: IAM role for AWS DevOps Agent to monitor this account
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: aidevops.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'aws:SourceAccount': !Ref AWS::AccountId
+              ArnLike:
+                'aws:SourceArn': !Sub 'arn:aws:aidevops:us-east-1:${AWS::AccountId}:agentspace/*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AIOpsAssistantPolicy
+      Policies:
+        - PolicyName: DevOpsAgentAdditionalPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - support:CreateCase
+                  - support:DescribeCases
+                  - aidevops:GetKnowledgeItem
+                  - aidevops:ListKnowledgeItems
+                Resource: '*'
+      Tags:
+        - Key: Purpose
+          Value: DevOps Agent Workshop
+
+  OperatorAppRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AgentSpaceName}-operator-app-role'
+      Description: IAM role for DevOps Agent operator app (web UI access)
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: aidevops.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'aws:SourceAccount': !Ref AWS::AccountId
+              ArnLike:
+                'aws:SourceArn': !Sub 'arn:aws:aidevops:us-east-1:${AWS::AccountId}:agentspace/*'
+      Policies:
+        - PolicyName: OperatorAppPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowBasicOperatorActions
+                Effect: Allow
+                Action:
+                  - aidevops:GetAgentSpace
+                  - aidevops:GetAssociation
+                  - aidevops:ListAssociations
+                  - aidevops:CreateBacklogTask
+                  - aidevops:GetBacklogTask
+                  - aidevops:UpdateBacklogTask
+                  - aidevops:ListBacklogTasks
+                  - aidevops:ListChildExecutions
+                  - aidevops:ListJournalRecords
+                  - aidevops:DiscoverTopology
+                  - aidevops:InvokeAgent
+                  - aidevops:ListGoals
+                  - aidevops:ListRecommendations
+                  - aidevops:ListExecutions
+                  - aidevops:GetRecommendation
+                  - aidevops:UpdateRecommendation
+                  - aidevops:CreateKnowledgeItem
+                  - aidevops:ListKnowledgeItems
+                  - aidevops:GetKnowledgeItem
+                  - aidevops:UpdateKnowledgeItem
+                  - aidevops:ListPendingMessages
+                  - aidevops:InitiateChatForCase
+                  - aidevops:EndChatForCase
+                  - aidevops:DescribeSupportLevel
+                  - aidevops:SendChatMessage
+                  # On-Demand Tasks (Chat) actions required for AgentSpaces
+                  # not auto-provisioned via the AWS Console flow. Without
+                  # these, the chat panel in the DevOps Agent web app errors
+                  # on "missing IAM permissions". See:
+                  # https://docs.aws.amazon.com/devopsagent/latest/userguide/working-with-devops-agent-on-demand-devops-tasks.html#enabling-chat-in-your-agent-space
+                  - aidevops:ListChats
+                  - aidevops:CreateChat
+                  - aidevops:SendMessage
+                Resource: !Sub 'arn:aws:aidevops:us-east-1:${AWS::AccountId}:agentspace/*'
+              - Sid: AllowSupportOperatorActions
+                Effect: Allow
+                Action:
+                  - support:DescribeCases
+                  - support:InitiateChatForCase
+                  - support:DescribeSupportLevel
+                Resource: '*'
+      Tags:
+        - Key: Purpose
+          Value: DevOps Agent Workshop
+
+  AgentSpace:
+    Type: AWS::DevOpsAgent::AgentSpace
+    DependsOn: DevOpsAgentRole
+    Properties:
+      Name: !Ref AgentSpaceName
+      Description: !Ref AgentSpaceDescription
+
+  # CloudWatch Logs resource policy allowing X-Ray to write spans.
+  # Required before calling UpdateTraceSegmentDestination (done in setup script).
+  XRaySpansLogResourcePolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: xray-transaction-search-spans
+      PolicyDocument: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "TransactionSearchXRayAccess",
+              "Effect": "Allow",
+              "Principal": { "Service": "xray.amazonaws.com" },
+              "Action": "logs:PutLogEvents",
+              "Resource": [
+                "arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:aws/spans:*",
+                "arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:/aws/application-signals/data:*"
+              ],
+              "Condition": {
+                "ArnLike": { "aws:SourceArn": "arn:aws:xray:us-east-1:${AWS::AccountId}:*" },
+                "StringEquals": { "aws:SourceAccount": "${AWS::AccountId}" }
+              }
+            }
+          ]
+        }
+
+  AwsAccountAssociation:
+    Type: AWS::DevOpsAgent::Association
+    Properties:
+      AgentSpaceId: !Ref AgentSpace
+      ServiceId: aws
+      Configuration:
+        Aws:
+          AccountId: !Ref AWS::AccountId
+          AccountType: monitor
+          AssumableRoleArn: !GetAtt DevOpsAgentRole.Arn
+
+Outputs:
+  AgentSpaceId:
+    Description: ID of the DevOps Agent Space (pass to setup-honeycomb-mcp.sh)
+    Value: !Ref AgentSpace
+    Export:
+      Name: !Sub '${AWS::StackName}-AgentSpaceId'
+
+  AgentSpaceArn:
+    Description: ARN of the DevOps Agent Space
+    Value: !GetAtt AgentSpace.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-AgentSpaceArn'
+
+  DevOpsAgentRoleArn:
+    Description: ARN of the IAM role used by the DevOps Agent
+    Value: !GetAtt DevOpsAgentRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-DevOpsAgentRoleArn'
+
+  OperatorAppRoleArn:
+    Description: ARN of the IAM role for operator app (web UI)
+    Value: !GetAtt OperatorAppRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-OperatorAppRoleArn'
+
+  PostDeployInstructions:
+    Description: Next steps after stack creation
+    Value: !Sub |
+      Stack deployed successfully. To enable the operator app and add Honeycomb MCP, run:
+
+        ./setup-honeycomb-mcp.sh ${AWS::StackName}
+
+      You will be prompted to authorize Honeycomb via OAuth in your browser.
