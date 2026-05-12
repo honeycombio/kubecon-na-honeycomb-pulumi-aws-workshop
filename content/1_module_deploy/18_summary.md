@@ -28,14 +28,16 @@ In **Module 2**, you'll instrument this application with OpenTelemetry to collec
 sudo systemctl start docker
 ```
 
-### OpenSearch Domain Creation Timeout
+### OpenSearch Serverless Collection Not Reachable
 
-**Symptom**: Deployment stuck on OpenSearch for >20 minutes
+**Symptom**: ECS task logs show 403 Forbidden or `AccessDeniedException` when calling the collection endpoint.
 
-**Solution**: OpenSearch domains can take 10-20 minutes. If it exceeds 25 minutes, check AWS Console for errors:
+**Solution**: The collection becomes `ACTIVE` within 1-3 minutes — if the task started before that, restart it. If errors persist after the collection is active, the data access policy is the most likely culprit:
 ```bash
-pulumi env run honeycomb-pulumi-workshop/ws -i -- aws opensearch describe-domain --domain-name otel-ai-chatbot-ws
+pulumi env run honeycomb-pulumi-workshop/ws -i -- aws opensearchserverless list-collections
+pulumi env run honeycomb-pulumi-workshop/ws -i -- aws opensearchserverless list-access-policies --type data
 ```
+The policy's `Principal` list must include the ECS task role ARN.
 
 ### ECS Tasks Failing Health Checks
 

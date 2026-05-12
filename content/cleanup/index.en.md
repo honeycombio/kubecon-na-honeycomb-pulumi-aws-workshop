@@ -16,12 +16,14 @@ To avoid ongoing AWS charges, it's important to clean up all resources created d
 | Service | Configuration | Monthly Cost |
 |---------|--------------|--------------|
 | ECS Fargate | 1 vCPU, 1GB, 24/7 | ~$25 |
-| Amazon OpenSearch | t3.small.search, 10GB | ~$40 |
+| Amazon OpenSearch Serverless | 2 OCU floor for VECTORSEARCH | ~$170 |
 | Application Load Balancer | Basic usage | ~$18 |
 | NAT Gateway | Single gateway | ~$32 |
 | Amazon ECR | ~10 container images | ~$0.30 |
 | CloudWatch Logs | 7-day retention | ~$5 |
-| **Total** | | **~$120/month** |
+| **Total** | | **~$250/month** |
+
+::alert[**Serverless cost note**: OpenSearch Serverless bills per OCU-hour and enforces a 2-OCU minimum per collection — significantly more than a t3.small.search domain (~$40/mo) at idle. The Serverless tradeoff is fast provisioning, auto-scaling, and zero ops; if leaving the stack idle for long periods is the use case, the managed domain is cheaper. **Run `pulumi destroy` when you're done with the workshop.**]{type="warning"}
 
 ## Cleanup Steps
 
@@ -39,7 +41,7 @@ pulumi destroy --yes
 This will delete:
 - ✓ ECS Service and Tasks
 - ✓ Application Load Balancer and Target Groups
-- ✓ Amazon OpenSearch Domain (~10-15 minutes to delete)
+- ✓ Amazon OpenSearch Serverless collection + policies (~1 minute)
 - ✓ ECR Repository and Container Images
 - ✓ VPC, Subnets, NAT Gateway, Internet Gateway
 - ✓ Security Groups
@@ -47,7 +49,7 @@ This will delete:
 - ✓ CloudWatch Log Groups
 - ✓ Secrets Manager secrets
 
-**Expected time: 15-20 minutes** (most time spent waiting for OpenSearch domain deletion)
+**Expected time: ~5 minutes** — Serverless collection teardown is fast compared to the managed-domain version this workshop previously used.
 
 ::alert[**Monitor Progress**: You can monitor deletion progress in the AWS Console by navigating to CloudFormation → Stacks (Pulumi uses CloudFormation under the hood).]{type="info"}
 
@@ -128,7 +130,7 @@ Before concluding cleanup, verify:
 - [ ] Pulumi stack destroyed successfully (`pulumi stack ls` shows 0 resources)
 - [ ] CloudFormation stacks deleted (EKS + VS Code Server)
 - [ ] No ECS clusters remaining with "otel-ai-chatbot" or "demo-aws-cluster" in name
-- [ ] No OpenSearch domains remaining with "otel-ai-chatbot" in name
+- [ ] No OpenSearch Serverless collections remaining with "otel-ai-chatbot" in name (`aws opensearchserverless list-collections`)
 - [ ] No ECR repositories remaining with "otel-ai-chatbot" in name
 - [ ] No Application Load Balancers remaining with "otel-ai-chatbot" in name
 - [ ] No VPCs tagged with Project=otel-ai-chatbot
@@ -142,12 +144,12 @@ If you used Cloud Formation templates to provision VS Code with predeployed tool
 
 ### Pulumi Destroy Hangs on OpenSearch Deletion
 
-**Symptom**: `pulumi destroy` is stuck waiting for OpenSearch domain deletion
+**Symptom**: `pulumi destroy` is stuck deleting the OpenSearch Serverless collection.
 
-**Solution**: OpenSearch domain deletion takes 10-15 minutes. If it exceeds 20 minutes:
-1. Check AWS Console → OpenSearch Service → Domains
-2. Look for domain status (should be "Deleting")
-3. If stuck, manually delete via console and then re-run `pulumi destroy`
+**Solution**: Serverless collection deletion is usually under a minute. If it exceeds 5 minutes:
+1. Check AWS Console → OpenSearch Service → Serverless → Collections
+2. Look for the collection status (should be "Deleting")
+3. If stuck, delete the data access policy first (manually via console), then re-run `pulumi destroy`
 
 ### "Resource in use" Errors
 
