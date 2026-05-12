@@ -22,7 +22,7 @@ By the end of this module, you'll have a fully functional GenAI chatbot running 
 
 - **ECS Fargate** cluster running containerized application
 - **Application Load Balancer** routing traffic to frontend and API
-- **Amazon OpenSearch Service** for vector storage (RAG)
+- **Amazon OpenSearch Serverless** (VECTORSEARCH collection) for vector storage (RAG)
 - **Amazon ECR** repository with automatically built Docker images
 - **VPC** with public and private subnets across 2 Availability Zones
 - **IAM roles** for secure service-to-service communication

@@ -46,7 +46,7 @@ Before deploying, let's understand what Pulumi will create:
 
    :image[Pulumi index.ts File]{src="/static/images/pulumi/vscode-pulumi-index-ts.png" width=750}
 
-   This file contains the complete infrastructure definition, including ECR repositories, VPC configuration, ECS cluster, OpenSearch domain, and Application Load Balancer setup.
+   This file contains the complete infrastructure definition, including ECR repositories, VPC configuration, ECS cluster, an OpenSearch Serverless vector-search collection, and Application Load Balancer setup.
 
 2. **Review key components in `pulumi/index.ts`**:
 
@@ -101,32 +101,24 @@ Before deploying, let's understand what Pulumi will create:
    });
    ```
 
-   **OpenSearch Domain with k-NN for Vector Search:**
+   **OpenSearch Serverless VECTORSEARCH Collection:**
    ```typescript
-   const openSearchDomain = new aws.opensearch.Domain(`${appName}-opensearch`, {
-       domainName: `${appName}-${environment}`,
-       engineVersion: "OpenSearch_3.1",
-       clusterConfig: {
-           instanceType: "m8g.large.search",
-           instanceCount: 2,
-       },
-       ebsOptions: {
-           ebsEnabled: true,
-           volumeSize: 100,
-           volumeType: "gp3",
-       },
-       encryptAtRest: { enabled: true },
-       nodeToNodeEncryption: { enabled: true },
-       domainEndpointOptions: {
-           enforceHttps: true,
-           tlsSecurityPolicy: "Policy-Min-TLS-1-2-2019-07",
-       },
-       vpcOptions: {
-           subnetIds: [vpc.privateSubnetIds[0]],
-           securityGroupIds: [openSearchSecurityGroup.id],
-       },
-   });
+   // Encryption + network policies (omitted here — see pulumi/index.ts).
+   // Data access policy grants the ECS task role + deploying caller full
+   // index/collection permissions via SigV4 — no master user/password.
+   const openSearchCollection = new aws.opensearch.ServerlessCollection(
+     `${appName}-aoss`,
+     {
+       name: collectionName,
+       type: "VECTORSEARCH",
+       description: "Vector search for OpenTelemetry docs RAG",
+       tags: tags,
+     },
+     {dependsOn: [encryptionPolicy, networkPolicy, dataAccessPolicy]},
+   );
    ```
+
+   ::alert[**Why Serverless?**: Managed OpenSearch domains take 15-60 minutes to provision and require master-user password management. Serverless `VECTORSEARCH` collections come up in 1-3 minutes, auto-scale on OCUs, and use IAM/SigV4 for auth — which fits the workshop's "watch it deploy live" pacing.]{type="success"}
 
    **ECS Task Definition with OpenTelemetry Configuration:**
    ```typescript
@@ -141,7 +133,8 @@ Before deploying, let's understand what Pulumi will create:
        containerDefinitions: {
            environment: [
                {name: "BEDROCK_MODEL", value: "us.anthropic.claude-haiku-4-5-20251001-v1:0"},
-               {name: "OPENSEARCH_ENDPOINT", value: `https://${opensearchEndpoint}`},
+               {name: "OPENSEARCH_ENDPOINT", value: opensearchEndpoint},
+               {name: "OPENSEARCH_SERVICE", value: "aoss"},
                // OpenTelemetry Configuration
                {name: "HONEYCOMB_DATASET", value: `${appName}-${environment}`},
                {name: "OTEL_SERVICE_NAME", value: `${appName}-backend`},

@@ -60,14 +60,8 @@ values:
           roleArn: <pulumi-oidc-assigned-role>
           sessionName: pulumi-environments-session
   app:
-    opensearchMasterPassword:
-      fn::secret: YourStrongPassword123!
-    opensearchMasterUser: admin
     honeycombApiKey: <honeycomb-api-key>
   pulumiConfig:
-    opensearchMasterPassword: ${app.opensearchMasterPassword}
-    opensearchMasterUser: ${app.opensearchMasterUser}
-    anthropic-api-key: test
     dockerBuildCloudBuilder: cloud-dirien-pulumi-test
     honeycombApiKey: ${app.honeycombApiKey}
   environmentVariables:

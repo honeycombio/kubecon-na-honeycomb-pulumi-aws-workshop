@@ -39,7 +39,7 @@ pulumi preview
 ```
 
 Review the output. You should see Pulumi plans to create approximately:
-- 50+ resources including VPC, subnets, security groups, ECS cluster, OpenSearch domain, ALB, etc.
+- 50+ resources including VPC, subnets, security groups, ECS cluster, OpenSearch Serverless collection, ALB, etc.
 - Docker image build steps
 - IAM roles and policies
 
@@ -63,14 +63,14 @@ pulumi up --yes
 3. **Docker Image** is pushed to ECR (~1-2 minutes)
 4. **VPC and Networking** resources are created (~2-3 minutes)
 5. **Security Groups** are configured
-6. **OpenSearch Domain** is provisioned (~10-15 minutes) ⏱️
+6. **OpenSearch Serverless** encryption/network/data policies + VECTORSEARCH collection (~1-3 minutes) ⚡
 7. **ECS Cluster and Service** are created (~2-3 minutes)
 8. **Application Load Balancer** is configured (~2-3 minutes)
 9. **CloudWatch Logs** and IAM roles are set up
 
-**Total deployment time: ~15-20 minutes** (mostly waiting for OpenSearch domain creation)
+**Total deployment time: ~5-7 minutes** — most of which is the Docker build. Earlier versions of this workshop used a managed OpenSearch domain that took 15-60 minutes; switching to Serverless reclaims that wall-clock time for the more interesting parts of the demo.
 
-::alert[**Coffee Break Time**: The OpenSearch domain creation takes 10-15 minutes. This is a good time to grab coffee or review the architecture diagram!]{type="info"}
+::alert[**Why so fast?**: OpenSearch Serverless provisions on shared AWS-managed capacity, so a new vector-search collection is ready in 1-3 minutes instead of the 15-60 minute domain spin-up. The tradeoff is per-OCU billing instead of per-instance — fine for a workshop, worth considering for prod.]{type="info"}
 
 ## Verify the Deployment
 
