@@ -28,30 +28,13 @@ weight: 32
 
    Example API key format: `hc[alphanumeric string]`
 
-2. Create an **Managenent API Key** for MCP server. For more documentation check [here](https://docs.honeycomb.io/integrations/mcp/configuration-guide/#setting-up-an-api-key).
-
-   - Navigate to your **Account > Team Settings > API Keys**
-
-   :image[Ingest API Key]{src="/static/images/honeycomb/account_team_settings.png" width=750}
-
-   - Click **Create Management API Key** 
-      - **Key Name**: `mcp-integration`
-      - Choose 
-         - **Environments** scope > **Read-only** 
-         - **Model Context Protocol** scope > **Read and write** 
-      - Click **Create**
- 
-   :image[Ingest API Key]{src="/static/images/honeycomb/create_management_key.png" width=600}
-
-   - **Important**: Copy the Key Secret value immediately and click **I've copied key secret!**. Copy **Key ID** as well and save it as the pair.
-
-4. Note your **Environment name**:
+3. Note your **Environment name**:
    - Look at the top-left of the Honeycomb UI
    - The environment name is usually shown as part of your team name
    - Default environment is often `production` or your team slug
    - You'll see this later when viewing traces
 
-::alert[**API Key Types**: Honeycomb has two types of API keys. **Ingest Keys** are used to send telemetry data (traces, logs, metrics) from your applications. **Configuration Keys** are for managing Honeycomb resources via the API. For this workshop, we only need an Ingest Key.]{type="info"}
+::alert[**API Key Types**: Honeycomb has two types of API keys. **Ingest Keys** are used to send telemetry data (traces, logs, metrics) from your applications. **Management Keys** are for managing Honeycomb resources via the API. For this workshop, we only need an Ingest Key — the Honeycomb MCP server uses OAuth instead of an API key, so you no longer need to create a Management Key just to use MCP.]{type="info"}
 
 ::alert[**Security Best Practice**: API keys are immutable after creation for security. Treat Honeycomb API keys like passwords - never commit them to version control or share them publicly. We'll store them securely in Pulumi ESC in the next step.]{type="warning"}
 

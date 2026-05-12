@@ -23,11 +23,11 @@ In Honeycomb, go to **Dataset Settings** → **Calculated Fields** and create th
    - **Expression**:
      ```
      SUM(
-       MUL($gen_ai.usage.input_tokens, 0.000003),
-       MUL($gen_ai.usage.output_tokens, 0.000015)
+       MUL($gen_ai.usage.input_tokens, 0.000001),
+       MUL($gen_ai.usage.output_tokens, 0.000005)
      )
      ```
-   - **Description**: "Estimated cost in USD based on Claude 3.5 Sonnet pricing"
+   - **Description**: "Estimated cost in USD based on Claude Haiku 4.5 pricing ($1/M input, $5/M output)"
 
 **3. Token Throughput**
 

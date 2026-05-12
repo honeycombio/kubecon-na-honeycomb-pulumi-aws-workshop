@@ -53,7 +53,7 @@ POST /api/chat              315ms  545ms  745ms
 - Output tokens: ~200-400 per response
 - Total: ~700-1200 tokens per request
 
-::alert[**Cost Analysis**: With Claude 3.5 Sonnet pricing (~$3 per million input tokens, ~$15 per million output tokens), each request costs approximately $0.003-0.005. At 1000 requests/day, that's $3-5/day just for LLM calls.]{type="warning"}
+::alert[**Cost Analysis**: With Claude Haiku 4.5 pricing (~$1 per million input tokens, ~$5 per million output tokens), each request costs approximately $0.0015-0.0025. At 1000 requests/day, that's $1.50-2.50/day just for LLM calls — about a 5× cost reduction vs Sonnet-class models.]{type="warning"}
 
 ### Query 3: Error Rate Analysis
 

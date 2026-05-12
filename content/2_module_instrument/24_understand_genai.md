@@ -8,7 +8,7 @@ The LLM tracing follows OpenTelemetry's **standardized semantic conventions for 
 | Attribute | Description | Example |
 |-----------|-------------|---------|
 | `gen_ai.system` | The GenAI system/provider | "bedrock", "openai", "anthropic" |
-| `gen_ai.request.model` | Model identifier | "anthropic.claude-3-5-sonnet-20240620-v1:0" |
+| `gen_ai.request.model` | Model identifier | "us.anthropic.claude-haiku-4-5-20251001-v1:0" |
 | `gen_ai.operation.name` | Type of GenAI operation | "completion", "embedding", "chat" |
 | `gen_ai.usage.input_tokens` | Input tokens consumed | 652 |
 | `gen_ai.usage.output_tokens` | Output tokens generated | 234 |
@@ -18,7 +18,7 @@ The LLM tracing follows OpenTelemetry's **standardized semantic conventions for 
 | `error.type` | Error type if failed | "RateLimitError", "InvalidRequest" |
 
 **Why these attributes matter:**
-- **Cost tracking**: Token usage directly correlates to API costs ($3-15 per million tokens)
+- **Cost tracking**: Token usage directly correlates to API costs ($1 per million input / $5 per million output tokens for Haiku 4.5)
 - **Performance monitoring**: Duration helps identify slow models or API issues
 - **Error analysis**: Distinguish between rate limits, timeouts, and invalid requests
 - **Model comparison**: Compare performance across different models and versions

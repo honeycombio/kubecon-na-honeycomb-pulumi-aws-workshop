@@ -27,17 +27,23 @@ Kiro CLI should be pre-installed in your VS Code Server environment. If you pref
 
 ::alert[**AI Tool Choice**: This workshop uses Kiro CLI for examples, but the MCP protocol is standardized. You can use any MCP-compatible AI assistant (Kiro, Claude Code, Cursor, Windsurf, etc.) with the same MCP servers.]{type="info"}
 
-## Step 2: Add Honeycomb MCP Servers
+## Step 2: Add Honeycomb MCP Server
 
-The Honeycomb MCP server allows to query your observability data directly. We'll use OAuth authentication, which eliminates the need to manage API keys.
+The Honeycomb MCP server lets your AI assistant query your observability data directly. As of 2026, the Honeycomb MCP server uses **OAuth 2.0 authorization discovery** — no API key or bearer header is required in the MCP configuration itself.
 
-Add the Honeycomb MCP server. Replace `<KEY_ID>` and `<SECRET_KEY>` with your Management Key values created earlier during Honeycomb account setup:
+Add the Honeycomb MCP server (no API key needed in the command):
 
    ```bash
-   kiro-cli-chat mcp add --name honeycomb --command npx --args "-y,mcp-remote,https://mcp.honeycomb.io/mcp,--header,Authorization: Bearer <KEY_ID>:<SECRET_KEY>"
+   kiro-cli-chat mcp add --name honeycomb --command npx --args "-y,mcp-remote,https://mcp.honeycomb.io/mcp"
    ```
 
-::alert[**Documentation**: For detailed Honeycomb MCP configuration, see: https://docs.honeycomb.io/integrations/mcp/configuration-guide/#step-2-add-your-api-key-to-your-agent]{type="info"}
+(Use `https://mcp.eu1.honeycomb.io/mcp` if your Honeycomb tenant lives in the EU region.)
+
+On first use, `mcp-remote` will open your browser to the Honeycomb OAuth consent screen. Log in with your Honeycomb account and authorize the MCP client — tokens are cached locally afterwards.
+
+::alert[**Why OAuth?**: OAuth replaces the older "Bearer `<KEY_ID>:<SECRET_KEY>`" header flow. You no longer need to create a Management API Key just to use the MCP server, and access is automatically scoped to whatever your Honeycomb user can already see. Headless agents that cannot prompt a browser can still fall back to the API-key header method — see the [Honeycomb MCP configuration guide](https://docs.honeycomb.io/integrations/mcp/configuration-guide/) for that workflow.]{type="info"}
+
+::alert[**Fresh tool listing & Canvas Agent**: After (re-)authenticating, the MCP server returns a fresh listing of the tools your tenant is entitled to. If your team is feature-flagged into the Honeycomb **Canvas Agent**, you'll see the new `canvas_agent_invoke` and `canvas_agent_poll_response` tools alongside the standard query tools. The Canvas Agent lets your IDE delegate multi-step Honeycomb investigations to a server-side agent rather than orchestrating each tool call from the client.]{type="success"}
 
 ## Step 3: Add Pulumi MCP Server
 
@@ -63,6 +69,8 @@ Add the Pulumi MCP server:
    kiro-cli-chat
    ```
 
+3. The first Honeycomb tool call will pop a browser window for OAuth consent. Approve it, then return to the terminal — Kiro should now have a fresh listing of Honeycomb tools (including the Canvas Agent tools if your team is feature-flagged in).
+
 4. Test the connection by asking questions:
    ```
    What Honeycomb datasets are available?
@@ -72,5 +80,4 @@ Add the Pulumi MCP server:
    What Pulumi stacks do I have in my organization?
    ```
 
-
-::alert[**MCP Architecture**: Current workshop doesn't support OAuth with HTTP type and one-click integration. See Pulumi and Honeycomb documentation if you desire to configure OAuth authentication with your IDE loacally.]{type="warning"}
+::alert[**Re-fetching the tool list**: If your team gets feature-flagged into a new Honeycomb capability mid-session, run `kiro-cli-chat mcp restart honeycomb` (or restart your IDE's MCP host). The server returns whatever toolset your account is entitled to *at connection time*, so a reconnect is required to pick up newly enabled tools.]{type="info"}

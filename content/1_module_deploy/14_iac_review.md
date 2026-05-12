@@ -140,7 +140,7 @@ Before deploying, let's understand what Pulumi will create:
        taskRoleArn: ecsTaskRole.arn,
        containerDefinitions: {
            environment: [
-               {name: "BEDROCK_MODEL", value: "anthropic.claude-3-5-sonnet-20240620-v1:0"},
+               {name: "BEDROCK_MODEL", value: "us.anthropic.claude-haiku-4-5-20251001-v1:0"},
                {name: "OPENSEARCH_ENDPOINT", value: `https://${opensearchEndpoint}`},
                // OpenTelemetry Configuration
                {name: "HONEYCOMB_DATASET", value: `${appName}-${environment}`},

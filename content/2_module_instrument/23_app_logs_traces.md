@@ -118,7 +118,7 @@ Now let's generate some requests to create traces.
    Click on the `gen_ai.bedrock.chat` span to see attributes:
    - `gen_ai.system` = "aws.bedrock"
    - `gen_ai.operation.name` = "chat"
-   - `gen_ai.request.model` = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+   - `gen_ai.request.model` = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
    - `gen_ai.usage.input_tokens` = 652
    - `gen_ai.usage.output_tokens` = 234
    - `gen_ai.response.finish_reasons` = ["stop"]

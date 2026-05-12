@@ -74,7 +74,7 @@ Now let's use Kiro CLI to query the observability data we collected in Module 3.
    ## Latency Breakdown by Operation (Slowest to Fastest)
    
    ### 1. Claude LLM Calls - SLOWEST 🐌
-   - **Span**: chat anthropic.claude-3-5-sonnet-20240620-v1:0
+   - **Span**: chat us.anthropic.claude-haiku-4-5-20251001-v1:0
    - **P95**: 28,592.62 ms (~28.6 seconds)
    - **P50**: 22,320.78 ms (~22.3 seconds)
    - **Average**: 21,279.58 ms (~21.3 seconds)
